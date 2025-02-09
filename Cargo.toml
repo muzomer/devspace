@@ -1,0 +1,17 @@
+[package]
+name = "devspace"
+version = "0.1.0"
+edition = "2021"
+authors = ["Muzaffar Omer <muzaffar.omer@gmail.com>"]
+description = "Tool to create and manage development workspaces"
+readme = "README.md"
+repository = "https://github.com/muzomer/devspace"
+license-file = "LICENSE"
+keywords = ["git", "worktree", "workspace"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+
+[dev-dependencies]
+assert_cmd = "2.0.13"
+pretty_assertions = "1.4.0"
