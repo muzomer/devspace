@@ -11,6 +11,7 @@ keywords = ["git", "worktree", "workspace"]
 categories = ["command-line-utilities"]
 
 [dependencies]
+clap = { version = "4.5.29", features = ["derive"] }
 
 [dev-dependencies]
 assert_cmd = "2.0.13"
