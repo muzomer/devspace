@@ -13,17 +13,18 @@ use ratatui::{
 
 const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier::BOLD);
 
-fn main() -> io::Result<()> {
+fn main() {
     let mut terminal = ratatui::init();
     let app_result = App::default().run(&mut terminal);
     ratatui::restore();
-    app_result
+    print!("{}", app_result.unwrap());
 }
 
 #[derive(Debug)]
 pub struct App {
     devspaces: devspace::DevspaceList,
     exit: bool,
+    selected_space: String,
 }
 
 impl Default for App {
@@ -34,18 +35,19 @@ impl Default for App {
         Self {
             devspaces: devspace::DevspaceList::new(items),
             exit: false,
+            selected_space: String::new(),
         }
     }
 }
 
 impl App {
     /// runs the application's main loop until the user quits
-    pub fn run(mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
+    pub fn run(mut self, terminal: &mut DefaultTerminal) -> io::Result<String> {
         while !self.exit {
             terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
             self.handle_events()?;
         }
-        Ok(())
+        Ok(self.selected_space)
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
@@ -91,7 +93,11 @@ impl App {
     }
 
     fn go_to_devspace(&mut self) {
-        self.devspaces.state.select_last();
+        if let Some(selected_index) = self.devspaces.state.selected() {
+            let selected_space = &self.devspaces.items[selected_index];
+            self.selected_space = selected_space.clone();
+        }
+        self.exit();
     }
 
     fn render_header(area: Rect, buf: &mut Buffer) {
