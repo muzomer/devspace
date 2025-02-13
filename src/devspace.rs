@@ -1,6 +1,8 @@
 use std::fs;
 use std::io;
 
+use ratatui::widgets::ListState;
+
 pub fn list(path: &str) -> io::Result<Vec<String>> {
     let mut devspaces: Vec<String> = vec![];
     for entry in list_dir(path)? {
@@ -21,4 +23,18 @@ pub fn list_dir(path: &str) -> io::Result<Vec<String>> {
     }
 
     Ok(paths)
+}
+
+#[derive(Debug, Clone)]
+pub struct DevspaceList {
+    pub items: Vec<String>,
+    pub state: ListState,
+}
+
+impl DevspaceList {
+    pub fn new(items: Vec<String>) -> Self {
+        let state = ListState::default();
+
+        Self { items, state }
+    }
 }
