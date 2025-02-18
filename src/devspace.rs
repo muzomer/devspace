@@ -1,15 +1,15 @@
 use std::ffi::OsStr;
 use std::fs::read_dir;
-use std::fs::DirEntry;
 use std::io;
 use std::path::Path;
+use std::path::PathBuf;
 
 use ratatui::widgets::ListState;
 
 pub fn list(path: &str) -> io::Result<Vec<String>> {
     let mut devspaces: Vec<String> = vec![];
     for entry in get_git_subdirs(Path::new(path))? {
-        if let Some(entry_path) = entry.path().to_str() {
+        if let Some(entry_path) = entry.to_str() {
             devspaces.push(entry_path.to_string());
         }
     }
@@ -18,11 +18,15 @@ pub fn list(path: &str) -> io::Result<Vec<String>> {
 }
 
 pub fn is_git_dir(dir: &Path) -> io::Result<bool> {
+    if !dir.is_dir() {
+        return Ok(false);
+    }
+
     let entries = read_dir(dir)?;
     let mut result = false;
     for entry in entries.flatten() {
         let path = entry.path();
-        if path.is_dir() && path.file_name() == Some(OsStr::new(".git")) {
+        if path.file_name() == Some(OsStr::new(".git")) {
             result = true;
             break;
         }
@@ -31,12 +35,26 @@ pub fn is_git_dir(dir: &Path) -> io::Result<bool> {
     Ok(result)
 }
 
-pub fn get_git_subdirs(path: &Path) -> io::Result<Vec<DirEntry>> {
-    let mut git_subdirs: Vec<DirEntry> = Vec::new();
+pub fn get_git_subdirs(path: &Path) -> io::Result<Vec<PathBuf>> {
+    let mut git_subdirs: Vec<PathBuf> = Vec::new();
+
+    if !path.is_dir() {
+        return Ok(git_subdirs);
+    }
+
+    if is_git_dir(path)? {
+        git_subdirs.push(path.to_path_buf());
+        return Ok(git_subdirs);
+    }
+
     let entries = read_dir(path)?;
     for entry in entries.flatten() {
+        if !entry.path().is_dir() {
+            continue;
+        }
+
         if let Ok(true) = is_git_dir(&entry.path()) {
-            git_subdirs.push(entry);
+            git_subdirs.push(entry.path().to_path_buf());
         } else {
             for entry in read_dir(entry.path())?.flatten() {
                 let entry_git_subdirs = get_git_subdirs(&entry.path())?;
@@ -122,7 +140,9 @@ mod tests {
         ] {
             let expected_dir = temp_dir.path().join(path);
             assert!(
-                git_subdirs.iter().any(|dir| dir.path() == expected_dir),
+                git_subdirs
+                    .iter()
+                    .any(|dir| dir.to_path_buf() == expected_dir),
                 "Expected {} to be listed in the git subdirectories, but it was not included",
                 expected_dir.to_str().unwrap()
             )
