@@ -101,7 +101,7 @@ impl App {
     }
 
     fn render_header(area: Rect, buf: &mut Buffer) {
-        Paragraph::new("Devspacs")
+        Paragraph::new("Devspaces")
             .bold()
             .centered()
             .render(area, buf);
