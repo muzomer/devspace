@@ -4,8 +4,6 @@ use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 
-use ratatui::widgets::ListState;
-
 pub fn list(path: &str) -> io::Result<Vec<String>> {
     let mut devspaces: Vec<String> = vec![];
     for entry in get_git_subdirs(Path::new(path))? {
@@ -64,20 +62,6 @@ pub fn get_git_subdirs(path: &Path) -> io::Result<Vec<PathBuf>> {
     }
 
     Ok(git_subdirs)
-}
-
-#[derive(Debug, Clone)]
-pub struct DevspaceList {
-    pub items: Vec<String>,
-    pub state: ListState,
-}
-
-impl DevspaceList {
-    pub fn new(items: Vec<String>) -> Self {
-        let state = ListState::default();
-
-        Self { items, state }
-    }
 }
 
 #[cfg(test)]

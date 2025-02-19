@@ -11,6 +11,14 @@ pub struct Args {
         default_value = "/home/momer/git-worktrees"
     )]
     pub spaces_dir: String,
+    /// Directory of the git respositories
+    #[arg(
+        short = 'r',
+        long,
+        value_name = "DIR",
+        default_value = "/home/momer/pcs"
+    )]
+    pub repos_dirs: String,
 }
 
 impl Args {
