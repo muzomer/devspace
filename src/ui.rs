@@ -28,25 +28,52 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
         .style(Style::new().white())
         .highlight_style(SELECTED_STYLE)
         .direction(ListDirection::TopToBottom);
+
+    let vertical = Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]);
+    let [filter_area, devspaces_list_area] = vertical.areas(main_area);
+    let input = Paragraph::new(app.devspaces.filter.as_str()).block(
+        Block::bordered()
+            .title("Filter")
+            .style(Style::new().white()),
+    );
+    frame.render_widget(input, filter_area);
+
     StatefulWidget::render(
         list,
-        main_area,
+        devspaces_list_area,
         frame.buffer_mut(),
         &mut app.devspaces.state,
     );
 
     if let CurrentScreen::ListRepos = app.current_screen {
+        let popup_area = repos_list_popup(main_area, 50, 50);
+        let vertical = Layout::vertical([Constraint::Length(3), Constraint::Min(1)]);
+        let [filter_area, repos_list_area] = vertical.areas(popup_area);
+
+        let input = Paragraph::new(app.repos.filter.as_str()).block(
+            Block::bordered()
+                .title("Filter")
+                .style(Style::new().light_green()),
+        );
+        frame.render_widget(input, filter_area);
+
         let block = Block::bordered()
             .title("Repositories")
             .title_alignment(Alignment::Center)
             .style(Style::new().light_green());
+
         let list = List::new(app.repos.items.clone())
             .block(block)
             .style(Style::new().white())
             .highlight_style(SELECTED_STYLE)
             .direction(ListDirection::TopToBottom);
-        let area = repos_list_popup(main_area, 50, 50);
-        StatefulWidget::render(list, area, frame.buffer_mut(), &mut app.repos.state);
+
+        StatefulWidget::render(
+            list,
+            repos_list_area,
+            frame.buffer_mut(),
+            &mut app.repos.state,
+        );
     }
 }
 
@@ -55,6 +82,5 @@ fn repos_list_popup(area: Rect, percent_x: u16, percent_y: u16) -> Rect {
     let horizontal = Layout::horizontal([Constraint::Percentage(percent_x)]).flex(Flex::Center);
     let [area] = vertical.areas(area);
     let [area] = horizontal.areas(area);
-
     area
 }

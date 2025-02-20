@@ -56,13 +56,19 @@ impl App {
 pub struct DevspaceList {
     pub items: Vec<String>,
     pub state: ListState,
+    pub filter: String,
 }
 
 impl DevspaceList {
     pub fn new(items: Vec<String>) -> Self {
         let state = ListState::default();
+        let filter = String::new();
 
-        Self { items, state }
+        Self {
+            items,
+            state,
+            filter,
+        }
     }
     pub fn select_next(&mut self) {
         self.state.select_next();
@@ -83,13 +89,19 @@ impl DevspaceList {
 pub struct RepositoriesList {
     pub items: Vec<String>,
     pub state: ListState,
+    pub filter: String,
 }
 
 impl RepositoriesList {
     pub fn new(items: Vec<String>) -> Self {
         let state = ListState::default();
+        let filter = String::new();
 
-        Self { items, state }
+        Self {
+            items,
+            state,
+            filter,
+        }
     }
     pub fn select_next(&mut self) {
         self.state.select_next();
