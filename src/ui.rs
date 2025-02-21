@@ -23,7 +23,7 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
     frame.render_widget(header, header_area);
     frame.render_widget(footer, footer_area);
     let block = Block::new().borders(Borders::all());
-    let list = List::new(app.devspaces.items.clone())
+    let list = List::new(app.devspaces.filtered_items.clone())
         .block(block)
         .style(Style::new().white())
         .highlight_style(SELECTED_STYLE)
@@ -45,7 +45,7 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
         &mut app.devspaces.state,
     );
 
-    if let CurrentScreen::ListRepos = app.current_screen {
+    if let CurrentScreen::ListRepos(_) = app.current_screen {
         let popup_area = repos_list_popup(main_area, 50, 50);
         let vertical = Layout::vertical([Constraint::Length(3), Constraint::Min(1)]);
         let [filter_area, repos_list_area] = vertical.areas(popup_area);
@@ -62,7 +62,7 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
             .title_alignment(Alignment::Center)
             .style(Style::new().light_green());
 
-        let list = List::new(app.repos.items.clone())
+        let list = List::new(app.repos.filtered_items.clone())
             .block(block)
             .style(Style::new().white())
             .highlight_style(SELECTED_STYLE)
