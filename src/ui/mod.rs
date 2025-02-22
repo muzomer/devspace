@@ -8,6 +8,8 @@ use ratatui::{
     widgets::{Block, Borders, List, ListDirection, Paragraph},
 };
 
+pub mod events;
+
 const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier::BOLD);
 
 pub fn ui(frame: &mut Frame, app: &mut App) {
