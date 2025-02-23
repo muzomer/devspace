@@ -1,10 +1,9 @@
-mod app;
 mod cli;
+mod model;
 mod ui;
 
 use std::{error::Error, io};
 
-use app::App;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     crossterm::{
@@ -14,27 +13,17 @@ use ratatui::{
     },
     Terminal,
 };
-use ui::{events, ui};
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // setup terminal
-    enable_raw_mode()?;
-    let mut stderr = io::stderr(); // This is a special case. Normally using stdout is fine
-    execute!(stderr, EnterAlternateScreen)?;
-    let backend = CrosstermBackend::new(stderr);
-    let mut terminal = Terminal::new(backend)?;
-    let mut app = App::default();
-
-    // start app
+    let mut terminal = setup_terminal()?;
+    let mut app = create_app();
     let res = run_app(&mut terminal, &mut app);
-    // restore terminal
-    disable_raw_mode()?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen,)?;
-    terminal.show_cursor()?;
+
+    let _ = restore_terminal(&mut terminal);
 
     if let Ok(do_print) = res {
         if do_print {
-            app.print_devspace_dir();
+            // app.print_devspace_dir();
         }
     } else if let Err(err) = res {
         println!("{err:?}");
@@ -43,14 +32,35 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<bool> {
+fn setup_terminal() -> io::Result<Terminal<CrosstermBackend<io::Stderr>>> {
+    enable_raw_mode()?;
+    let mut stderr = io::stderr(); // This is a special case. Normally using stdout is fine
+    execute!(stderr, EnterAlternateScreen)?;
+    let backend = CrosstermBackend::new(stderr);
+    Terminal::new(backend)
+}
+
+fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<io::Stderr>>) -> io::Result<()> {
+    disable_raw_mode()?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen,)?;
+    terminal.show_cursor()
+}
+
+fn create_app() -> ui::App {
+    let args = cli::Args::new();
+    let devspaces = model::Devspace::list(&args.spaces_dir);
+    let repos = model::Repository::list(&args.repos_dirs);
+    ui::App::new(devspaces, repos)
+}
+
+fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut ui::App) -> io::Result<bool> {
     loop {
-        terminal.draw(|f| ui(f, app))?;
+        terminal.draw(|f| ui::draw(f, app))?;
 
         if let Event::Key(key_event) = event::read()? {
-            match events::handle_event(key_event, app) {
-                events::HandleEventResult::Continue => continue,
-                events::HandleEventResult::Stop => return Ok(true),
+            match ui::handle_event(key_event, app) {
+                ui::HandleEventResult::Continue => continue,
+                ui::HandleEventResult::Stop => return Ok(true),
             }
         }
     }

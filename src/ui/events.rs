@@ -1,4 +1,4 @@
-use crate::app::{App, CurrentScreen, ListingScreenMode};
+use super::app::{App, CurrentScreen, ListingScreenMode};
 use crossterm::event::{KeyEvent, KeyModifiers};
 use ratatui::crossterm::event::{KeyCode, KeyEventKind};
 

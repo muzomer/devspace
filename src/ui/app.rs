@@ -1,8 +1,7 @@
-use crate::cli;
+use crate::model::{Devspace, Repository};
 
-mod devspace;
-mod repo;
-
+use super::devspaces_list::DevspaceList;
+use super::repositories_list::RepositoriesList;
 #[derive(Debug, Clone, Copy)]
 pub enum ListingScreenMode {
     Filtering,
@@ -17,30 +16,23 @@ pub enum CurrentScreen {
 
 #[derive(Debug)]
 pub struct App {
-    pub devspaces: devspace::DevspaceList,
-    pub repos: repo::RepositoriesList,
+    pub devspaces: DevspaceList,
+    pub repos: RepositoriesList,
     pub exit: bool,
     pub selected_space: String,
     pub current_screen: CurrentScreen,
 }
 
-impl Default for App {
-    fn default() -> Self {
-        let args = cli::Args::new();
-        let devspaces = devspace::list(&args.spaces_dir).unwrap_or_default();
-        let repos = devspace::list(&args.repos_dirs).unwrap_or_default();
-
+impl App {
+    pub fn new(devspaces: Vec<Devspace>, repositories: Vec<Repository>) -> Self {
         Self {
-            devspaces: devspace::DevspaceList::new(devspaces),
-            repos: repo::RepositoriesList::new(repos),
+            devspaces: DevspaceList::new(devspaces),
+            repos: RepositoriesList::new(repositories),
             exit: false,
             selected_space: String::new(),
             current_screen: CurrentScreen::ListDevspaces(ListingScreenMode::Filtering),
         }
     }
-}
-
-impl App {
     pub fn go_to_devspace(&mut self) {
         if let Some(selected_index) = self.devspaces.state.selected() {
             let selected_space = &self.devspaces.items[selected_index];
@@ -53,7 +45,7 @@ impl App {
         self.exit = true;
     }
 
-    pub fn print_devspace_dir(&self) {
-        println!("{}", self.selected_space);
-    }
+    // pub fn print_devspace_dir(&self) {
+    //     println!("{}", self.selected_space);
+    // }
 }

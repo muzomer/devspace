@@ -1,5 +1,7 @@
 use ratatui::widgets::ListState;
 
+use crate::model::Repository;
+
 #[derive(Debug, Clone)]
 pub struct RepositoriesList {
     pub items: Vec<String>,
@@ -10,13 +12,14 @@ pub struct RepositoriesList {
 }
 
 impl RepositoriesList {
-    pub fn new(items: Vec<String>) -> Self {
+    pub fn new(items: Vec<Repository>) -> Self {
+        let dirs: Vec<String> = items.iter().map(|dir| dir.path.clone()).collect();
         let mut new = Self {
-            items: items.clone(),
+            items: dirs.clone(),
             state: ListState::default(),
             filter: String::new(),
             filter_character_index: 0,
-            filtered_items: items.clone(),
+            filtered_items: dirs.clone(),
         };
         new.state.select_first();
         new

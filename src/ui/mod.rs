@@ -1,4 +1,3 @@
-use crate::app::{App, CurrentScreen};
 use ratatui::layout::{Flex, Rect};
 use ratatui::widgets::StatefulWidget;
 use ratatui::Frame;
@@ -8,11 +7,17 @@ use ratatui::{
     widgets::{Block, Borders, List, ListDirection, Paragraph},
 };
 
-pub mod events;
+mod app;
+mod devspaces_list;
+mod events;
+mod repositories_list;
+
+pub use app::{App, CurrentScreen};
+pub use events::{handle_event, HandleEventResult};
 
 const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier::BOLD);
 
-pub fn ui(frame: &mut Frame, app: &mut App) {
+pub fn draw(frame: &mut Frame, app: &mut App) {
     let [header_area, main_area, footer_area] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Fill(1),
