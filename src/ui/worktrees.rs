@@ -1,9 +1,9 @@
 use ratatui::widgets::ListState;
 
-use crate::model::Devspace;
+use crate::model::Worktree;
 
 #[derive(Debug, Clone)]
-pub struct DevspaceList {
+pub struct WorktreesList {
     pub items: Vec<String>,
     pub state: ListState,
     pub filter: String,
@@ -11,8 +11,8 @@ pub struct DevspaceList {
     pub filtered_items: Vec<String>,
 }
 
-impl DevspaceList {
-    pub fn new(items: Vec<Devspace>) -> Self {
+impl WorktreesList {
+    pub fn new(items: Vec<Worktree>) -> Self {
         let dirs: Vec<String> = items.iter().map(|dir| dir.path.clone()).collect();
         let mut new = Self {
             items: dirs.clone(),
@@ -63,7 +63,7 @@ impl DevspaceList {
         self.filtered_items = self
             .items
             .iter()
-            .filter(|devspace| devspace.contains(&self.filter))
+            .filter(|worktree| worktree.contains(&self.filter))
             .cloned()
             .collect();
     }

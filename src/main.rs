@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Ok(do_print) = res {
         if do_print {
-            app.print_devspace_dir();
+            app.print_worktree_dir();
         }
     } else if let Err(err) = res {
         println!("{err:?}");
@@ -48,9 +48,9 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<io::Stderr>>) -> io
 }
 
 fn create_app(args: cli::Args) -> ui::App {
-    let devspaces = model::Devspace::list(&args.spaces_dir);
+    let worktrees = model::Worktree::list(&args.worktrees_dir);
     let repos = model::Repository::list(&args.repos_dirs);
-    ui::App::new(devspaces, repos)
+    ui::App::new(worktrees, repos)
 }
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut ui::App) -> io::Result<bool> {

@@ -63,7 +63,7 @@ impl RepositoriesList {
         self.filtered_items = self
             .items
             .iter()
-            .filter(|devspace| devspace.contains(&self.filter))
+            .filter(|repo| repo.contains(&self.filter))
             .cloned()
             .collect();
     }

@@ -14,8 +14,8 @@ pub fn handle_event(key_event: KeyEvent, app: &mut App) -> HandleEventResult {
         HandleEventResult::Stop
     } else {
         match app.current_screen {
-            CurrentScreen::ListDevspaces(screen_mode) => {
-                list_devspaces_screen(&key_event, &screen_mode, app)
+            CurrentScreen::ListWorktrees(screen_mode) => {
+                list_worktrees_screen(&key_event, &screen_mode, app)
             }
             CurrentScreen::ListRepos(screen_mode) => {
                 list_repos_screen(&key_event, &screen_mode, app)
@@ -24,7 +24,7 @@ pub fn handle_event(key_event: KeyEvent, app: &mut App) -> HandleEventResult {
     }
 }
 
-fn list_devspaces_screen(
+fn list_worktrees_screen(
     key_event: &KeyEvent,
     screen_mode: &ListingScreenMode,
     app: &mut App,
@@ -35,30 +35,30 @@ fn list_devspaces_screen(
                 match key_event.code {
                     KeyCode::Char('f') => {
                         app.current_screen =
-                            CurrentScreen::ListDevspaces(ListingScreenMode::Filtering)
+                            CurrentScreen::ListWorktrees(ListingScreenMode::Filtering)
                     }
                     KeyCode::Char('n') => {
-                        app.devspaces.select_next();
+                        app.worktrees.select_next();
                     }
                     KeyCode::Char('p') => {
-                        app.devspaces.select_previous();
+                        app.worktrees.select_previous();
                     }
                     _ => {}
                 }
             } else {
                 match key_event.code {
                     KeyCode::Char('q') | KeyCode::Esc => return HandleEventResult::Stop,
-                    KeyCode::Char('j') | KeyCode::Down => app.devspaces.select_next(),
-                    KeyCode::Char('k') | KeyCode::Up => app.devspaces.select_previous(),
-                    KeyCode::Char('g') | KeyCode::Home => app.devspaces.select_first(),
-                    KeyCode::Char('G') | KeyCode::End => app.devspaces.select_last(),
+                    KeyCode::Char('j') | KeyCode::Down => app.worktrees.select_next(),
+                    KeyCode::Char('k') | KeyCode::Up => app.worktrees.select_previous(),
+                    KeyCode::Char('g') | KeyCode::Home => app.worktrees.select_first(),
+                    KeyCode::Char('G') | KeyCode::End => app.worktrees.select_last(),
                     KeyCode::Char('n') => {
                         app.current_screen = CurrentScreen::ListRepos(ListingScreenMode::Filtering)
                     }
                     KeyCode::Enter => {
-                        app.go_to_devspace();
+                        app.go_to_worktree();
                     }
-                    KeyCode::Tab => app.devspaces.select_next(),
+                    KeyCode::Tab => app.worktrees.select_next(),
                     _ => {}
                 }
             }
@@ -70,10 +70,10 @@ fn list_devspaces_screen(
                         app.current_screen = CurrentScreen::ListRepos(ListingScreenMode::Filtering)
                     }
                     KeyCode::Char('n') => {
-                        app.devspaces.select_next();
+                        app.worktrees.select_next();
                     }
                     KeyCode::Char('p') => {
-                        app.devspaces.select_previous();
+                        app.worktrees.select_previous();
                     }
                     _ => {}
                 }
@@ -81,23 +81,23 @@ fn list_devspaces_screen(
                 match key_event.code {
                     KeyCode::Esc => return HandleEventResult::Stop,
                     KeyCode::Tab => {
-                        app.devspaces.select_next();
+                        app.worktrees.select_next();
                     }
                     KeyCode::Backspace => {
-                        app.devspaces.delete_char();
-                        app.devspaces.update_filtered_items();
-                        app.devspaces.select_first();
+                        app.worktrees.delete_char();
+                        app.worktrees.update_filtered_items();
+                        app.worktrees.select_first();
                     }
                     KeyCode::Enter => {
                         app.current_screen =
-                            CurrentScreen::ListDevspaces(ListingScreenMode::Navigating);
-                        app.go_to_devspace();
+                            CurrentScreen::ListWorktrees(ListingScreenMode::Navigating);
+                        app.go_to_worktree();
                         return HandleEventResult::Stop;
                     }
                     KeyCode::Char(to_insert) => {
-                        app.devspaces.enter_char(to_insert);
-                        app.devspaces.update_filtered_items();
-                        app.devspaces.select_first();
+                        app.worktrees.enter_char(to_insert);
+                        app.worktrees.update_filtered_items();
+                        app.worktrees.select_first();
                     }
                     _ => {}
                 }
@@ -127,7 +127,7 @@ fn list_repos_screen(
         match screen_mode {
             ListingScreenMode::Filtering => match key_event.code {
                 KeyCode::Esc => {
-                    app.current_screen = CurrentScreen::ListDevspaces(ListingScreenMode::Filtering)
+                    app.current_screen = CurrentScreen::ListWorktrees(ListingScreenMode::Filtering)
                 }
                 KeyCode::Tab => {
                     app.repos.select_next();
@@ -148,7 +148,7 @@ fn list_repos_screen(
             ListingScreenMode::Navigating => match key_event.code {
                 KeyCode::Tab => app.repos.select_next(),
                 KeyCode::Char('q') | KeyCode::Esc => {
-                    app.current_screen = CurrentScreen::ListDevspaces(ListingScreenMode::Filtering)
+                    app.current_screen = CurrentScreen::ListWorktrees(ListingScreenMode::Filtering)
                 }
                 KeyCode::Char('j') | KeyCode::Down => app.repos.select_next(),
                 KeyCode::Char('k') | KeyCode::Up => app.repos.select_previous(),

@@ -1,7 +1,7 @@
-use crate::model::{Devspace, Repository};
+use crate::model::{Repository, Worktree};
 
-use super::devspaces::DevspaceList;
 use super::repositories::RepositoriesList;
+use super::worktrees::WorktreesList;
 #[derive(Debug, Clone, Copy)]
 pub enum ListingScreenMode {
     Filtering,
@@ -10,13 +10,13 @@ pub enum ListingScreenMode {
 
 #[derive(Debug, Clone, Copy)]
 pub enum CurrentScreen {
-    ListDevspaces(ListingScreenMode),
+    ListWorktrees(ListingScreenMode),
     ListRepos(ListingScreenMode),
 }
 
 #[derive(Debug)]
 pub struct App {
-    pub devspaces: DevspaceList,
+    pub worktrees: WorktreesList,
     pub repos: RepositoriesList,
     pub exit: bool,
     pub selected_space: String,
@@ -24,18 +24,18 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(devspaces: Vec<Devspace>, repositories: Vec<Repository>) -> Self {
+    pub fn new(worktrees: Vec<Worktree>, repositories: Vec<Repository>) -> Self {
         Self {
-            devspaces: DevspaceList::new(devspaces),
+            worktrees: WorktreesList::new(worktrees),
             repos: RepositoriesList::new(repositories),
             exit: false,
             selected_space: String::new(),
-            current_screen: CurrentScreen::ListDevspaces(ListingScreenMode::Filtering),
+            current_screen: CurrentScreen::ListWorktrees(ListingScreenMode::Filtering),
         }
     }
-    pub fn go_to_devspace(&mut self) {
-        if let Some(selected_index) = self.devspaces.state.selected() {
-            let selected_space = &self.devspaces.items[selected_index];
+    pub fn go_to_worktree(&mut self) {
+        if let Some(selected_index) = self.worktrees.state.selected() {
+            let selected_space = &self.worktrees.items[selected_index];
             self.selected_space = selected_space.clone();
         }
         self.exit();
@@ -45,7 +45,7 @@ impl App {
         self.exit = true;
     }
 
-    pub fn print_devspace_dir(&self) {
+    pub fn print_worktree_dir(&self) {
         println!("{}", self.selected_space);
     }
 }

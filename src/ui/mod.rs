@@ -8,9 +8,9 @@ use ratatui::{
 };
 
 mod app;
-mod devspaces;
 mod events;
 mod repositories;
+mod worktrees;
 
 pub use app::{App, CurrentScreen};
 pub use events::{handle_event, HandleEventResult};
@@ -25,20 +25,20 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     ])
     .areas(frame.area());
 
-    let header = Paragraph::new("Devspaces").bold().centered();
+    let header = Paragraph::new("Git Worktrees").bold().centered();
     let footer = Paragraph::new("Use ↓↑ or j/k to move, g/G to go top/bottom.").centered();
     frame.render_widget(header, header_area);
     frame.render_widget(footer, footer_area);
     let block = Block::new().borders(Borders::all());
-    let list = List::new(app.devspaces.filtered_items.clone())
+    let list = List::new(app.worktrees.filtered_items.clone())
         .block(block)
         .style(Style::new().white())
         .highlight_style(SELECTED_STYLE)
         .direction(ListDirection::TopToBottom);
 
     let vertical = Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]);
-    let [filter_area, devspaces_list_area] = vertical.areas(main_area);
-    let input = Paragraph::new(app.devspaces.filter.as_str()).block(
+    let [filter_area, worktrees_list_area] = vertical.areas(main_area);
+    let input = Paragraph::new(app.worktrees.filter.as_str()).block(
         Block::bordered()
             .title("Filter")
             .style(Style::new().white()),
@@ -47,9 +47,9 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 
     StatefulWidget::render(
         list,
-        devspaces_list_area,
+        worktrees_list_area,
         frame.buffer_mut(),
-        &mut app.devspaces.state,
+        &mut app.worktrees.state,
     );
 
     if let CurrentScreen::ListRepos(_) = app.current_screen {

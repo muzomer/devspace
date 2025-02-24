@@ -5,12 +5,12 @@ pub struct Repository {
     pub path: String,
 }
 
-pub struct Devspace {
+pub struct Worktree {
     pub git_worktree: git2::Worktree,
     pub path: String,
 }
 
-impl Devspace {
+impl Worktree {
     pub fn from_path(path: &str) -> Result<Self, git2::Error> {
         let repo = git2::Repository::open(path)?;
         let worktree = git2::Worktree::open_from_repository(&repo)?;
@@ -25,10 +25,10 @@ impl Devspace {
             Ok(git_dirs) => git_dirs
                 .iter()
                 .filter_map(|dir| match Self::from_path(dir) {
-                    Ok(created_devspace) => Some(created_devspace),
+                    Ok(created_worktree) => Some(created_worktree),
                     Err(err) => {
                         println!(
-                            "Could not create devspace from path {}. Error: {}",
+                            "Could not create worktree from path {}. Error: {}",
                             dir, err
                         );
                         None
@@ -37,7 +37,7 @@ impl Devspace {
                 .collect(),
             Err(err) => {
                 println!(
-                    "Could not retrieve the git directories for devspaces: {}",
+                    "Could not list the directories of the git worktrees: {}",
                     err
                 );
                 Vec::new()
@@ -60,7 +60,7 @@ impl Repository {
             Ok(git_dirs) => git_dirs
                 .iter()
                 .filter_map(|dir| match Self::from_path(dir) {
-                    Ok(created_devspace) => Some(created_devspace),
+                    Ok(created_repo) => Some(created_repo),
                     Err(err) => {
                         println!(
                             "Could not create repository from path {}. Error: {}",

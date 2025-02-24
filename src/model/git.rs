@@ -5,14 +5,14 @@ use std::path::Path;
 use std::path::PathBuf;
 
 pub fn list_git_dirs(path: &str) -> io::Result<Vec<String>> {
-    let mut devspaces: Vec<String> = vec![];
+    let mut git_dirs: Vec<String> = vec![];
     for entry in get_git_subdirs(Path::new(path))? {
         if let Some(entry_path) = entry.to_str() {
-            devspaces.push(entry_path.to_string());
+            git_dirs.push(entry_path.to_string());
         }
     }
 
-    Ok(devspaces)
+    Ok(git_dirs)
 }
 
 pub fn is_git_dir(dir: &Path) -> io::Result<bool> {
