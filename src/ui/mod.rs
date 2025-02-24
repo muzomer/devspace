@@ -57,17 +57,13 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         let vertical = Layout::vertical([Constraint::Length(3), Constraint::Min(1)]);
         let [filter_area, repos_list_area] = vertical.areas(popup_area);
 
-        let input = Paragraph::new(app.repos.filter.as_str()).block(
-            Block::bordered()
-                .title("Filter")
-                .style(Style::new().light_green()),
-        );
+        let input =
+            Paragraph::new(app.repos.filter.as_str()).block(Block::bordered().title("Filter"));
         frame.render_widget(input, filter_area);
 
         let block = Block::bordered()
             .title("Repositories")
-            .title_alignment(Alignment::Center)
-            .style(Style::new().light_green());
+            .title_alignment(Alignment::Center);
 
         let list = List::new(app.repos.filtered_items.clone())
             .block(block)
