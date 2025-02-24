@@ -20,6 +20,7 @@ pub fn handle_event(key_event: KeyEvent, app: &mut App) -> HandleEventResult {
             CurrentScreen::ListRepos(screen_mode) => {
                 list_repos_screen(&key_event, &screen_mode, app)
             }
+            CurrentScreen::CreatingWorktree => todo!(),
         }
     }
 }

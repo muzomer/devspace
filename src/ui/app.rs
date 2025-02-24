@@ -12,6 +12,7 @@ pub enum ListingScreenMode {
 pub enum CurrentScreen {
     ListWorktrees(ListingScreenMode),
     ListRepos(ListingScreenMode),
+    CreatingWorktree,
 }
 
 #[derive(Debug)]

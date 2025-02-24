@@ -4,7 +4,7 @@ use ratatui::Frame;
 use ratatui::{
     layout::{Alignment, Constraint, Layout},
     style::{palette::tailwind::SLATE, Modifier, Style, Stylize},
-    widgets::{Block, Borders, List, ListDirection, Paragraph},
+    widgets::{Block, List, ListDirection, Paragraph},
 };
 
 mod app;
@@ -29,28 +29,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     let footer = Paragraph::new("Use ↓↑ or j/k to move, g/G to go top/bottom.").centered();
     frame.render_widget(header, header_area);
     frame.render_widget(footer, footer_area);
-    let block = Block::new().borders(Borders::all());
-    let list = List::new(app.worktrees.filtered_items.clone())
-        .block(block)
-        .style(Style::new().white())
-        .highlight_style(SELECTED_STYLE)
-        .direction(ListDirection::TopToBottom);
-
-    let vertical = Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]);
-    let [filter_area, worktrees_list_area] = vertical.areas(main_area);
-    let input = Paragraph::new(app.worktrees.filter.as_str()).block(
-        Block::bordered()
-            .title("Filter")
-            .style(Style::new().white()),
-    );
-    frame.render_widget(input, filter_area);
-
-    StatefulWidget::render(
-        list,
-        worktrees_list_area,
-        frame.buffer_mut(),
-        &mut app.worktrees.state,
-    );
+    app.worktrees.draw(frame, main_area);
 
     if let CurrentScreen::ListRepos(_) = app.current_screen {
         let popup_area = repos_list_popup(main_area, 50, 50);

@@ -1,6 +1,13 @@
-use ratatui::widgets::ListState;
+use ratatui::{
+    layout::{Constraint, Layout, Rect},
+    widgets::{Block, Borders, List, ListDirection, ListState, Paragraph, StatefulWidget},
+    Frame,
+};
 
 use crate::model::Worktree;
+use ratatui::style::{Style, Stylize};
+
+use super::SELECTED_STYLE;
 
 #[derive(Debug, Clone)]
 pub struct WorktreesList {
@@ -24,6 +31,30 @@ impl WorktreesList {
         new.state.select_first();
         new
     }
+
+    pub fn draw(&mut self, frame: &mut Frame, area: Rect) {
+        let block = Block::new().borders(Borders::all());
+        let list = List::new(self.filtered_items.clone())
+            .block(block)
+            .style(Style::new().white())
+            .highlight_style(SELECTED_STYLE)
+            .direction(ListDirection::TopToBottom);
+        let vertical = Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]);
+        let [filter_area, worktrees_list_area] = vertical.areas(area);
+        let input = Paragraph::new(self.filter.as_str()).block(
+            Block::bordered()
+                .title("Filter")
+                .style(Style::new().white()),
+        );
+        frame.render_widget(input, filter_area);
+        StatefulWidget::render(
+            list,
+            worktrees_list_area,
+            frame.buffer_mut(),
+            &mut self.state,
+        );
+    }
+
     pub fn select_next(&mut self) {
         if let Some(index) = self.state.selected() {
             if index == self.filtered_items.len() - 1 {
