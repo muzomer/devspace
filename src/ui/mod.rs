@@ -33,29 +33,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 
     if let CurrentScreen::ListRepos(_) = app.current_screen {
         let popup_area = repos_list_popup(main_area, 50, 50);
-        let vertical = Layout::vertical([Constraint::Length(3), Constraint::Min(1)]);
-        let [filter_area, repos_list_area] = vertical.areas(popup_area);
-
-        let input =
-            Paragraph::new(app.repos.filter.as_str()).block(Block::bordered().title("Filter"));
-        frame.render_widget(input, filter_area);
-
-        let block = Block::bordered()
-            .title("Repositories")
-            .title_alignment(Alignment::Center);
-
-        let list = List::new(app.repos.filtered_items.clone())
-            .block(block)
-            .style(Style::new().white())
-            .highlight_style(SELECTED_STYLE)
-            .direction(ListDirection::TopToBottom);
-
-        StatefulWidget::render(
-            list,
-            repos_list_area,
-            frame.buffer_mut(),
-            &mut app.repos.state,
-        );
+        app.repos.draw(frame, popup_area);
     }
 }
 

@@ -1,6 +1,17 @@
+use ratatui::layout::{Alignment, Rect};
 use ratatui::widgets::ListState;
 
+use ratatui::Frame;
+use ratatui::{
+    layout::{Constraint, Layout},
+    widgets::{Block, List, ListDirection, Paragraph, StatefulWidget},
+};
+
+use ratatui::style::{Style, Stylize};
+
 use crate::model::Repository;
+
+use super::SELECTED_STYLE;
 
 #[derive(Debug, Clone)]
 pub struct RepositoriesList {
@@ -23,6 +34,26 @@ impl RepositoriesList {
         };
         new.state.select_first();
         new
+    }
+
+    pub fn draw(&mut self, frame: &mut Frame, area: Rect) {
+        let vertical = Layout::vertical([Constraint::Length(3), Constraint::Min(1)]);
+        let [filter_area, repos_list_area] = vertical.areas(area);
+
+        let input = Paragraph::new(self.filter.as_str()).block(Block::bordered().title("Filter"));
+        frame.render_widget(input, filter_area);
+
+        let block = Block::bordered()
+            .title("Repositories")
+            .title_alignment(Alignment::Center);
+
+        let list = List::new(self.filtered_items.clone())
+            .block(block)
+            .style(Style::new().white())
+            .highlight_style(SELECTED_STYLE)
+            .direction(ListDirection::TopToBottom);
+
+        StatefulWidget::render(list, repos_list_area, frame.buffer_mut(), &mut self.state);
     }
     pub fn select_next(&mut self) {
         if let Some(index) = self.state.selected() {
