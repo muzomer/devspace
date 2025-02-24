@@ -15,15 +15,16 @@ use ratatui::{
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let args = cli::Args::new();
     let mut terminal = setup_terminal()?;
-    let mut app = create_app();
+    let mut app = create_app(args);
     let res = run_app(&mut terminal, &mut app);
 
     let _ = restore_terminal(&mut terminal);
 
     if let Ok(do_print) = res {
         if do_print {
-            // app.print_devspace_dir();
+            app.print_devspace_dir();
         }
     } else if let Err(err) = res {
         println!("{err:?}");
@@ -34,7 +35,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn setup_terminal() -> io::Result<Terminal<CrosstermBackend<io::Stderr>>> {
     enable_raw_mode()?;
-    let mut stderr = io::stderr(); // This is a special case. Normally using stdout is fine
+    let mut stderr = io::stderr();
     execute!(stderr, EnterAlternateScreen)?;
     let backend = CrosstermBackend::new(stderr);
     Terminal::new(backend)
@@ -46,8 +47,7 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<io::Stderr>>) -> io
     terminal.show_cursor()
 }
 
-fn create_app() -> ui::App {
-    let args = cli::Args::new();
+fn create_app(args: cli::Args) -> ui::App {
     let devspaces = model::Devspace::list(&args.spaces_dir);
     let repos = model::Repository::list(&args.repos_dirs);
     ui::App::new(devspaces, repos)

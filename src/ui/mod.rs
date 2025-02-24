@@ -8,9 +8,9 @@ use ratatui::{
 };
 
 mod app;
-mod devspaces_list;
+mod devspaces;
 mod events;
-mod repositories_list;
+mod repositories;
 
 pub use app::{App, CurrentScreen};
 pub use events::{handle_event, HandleEventResult};

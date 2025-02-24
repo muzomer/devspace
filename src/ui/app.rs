@@ -1,7 +1,7 @@
 use crate::model::{Devspace, Repository};
 
-use super::devspaces_list::DevspaceList;
-use super::repositories_list::RepositoriesList;
+use super::devspaces::DevspaceList;
+use super::repositories::RepositoriesList;
 #[derive(Debug, Clone, Copy)]
 pub enum ListingScreenMode {
     Filtering,
@@ -45,7 +45,7 @@ impl App {
         self.exit = true;
     }
 
-    // pub fn print_devspace_dir(&self) {
-    //     println!("{}", self.selected_space);
-    // }
+    pub fn print_devspace_dir(&self) {
+        println!("{}", self.selected_space);
+    }
 }
