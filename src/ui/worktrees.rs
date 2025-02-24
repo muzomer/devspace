@@ -1,3 +1,4 @@
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     widgets::{Block, Borders, List, ListDirection, ListState, Paragraph, StatefulWidget},
@@ -7,18 +8,25 @@ use ratatui::{
 use crate::model::Worktree;
 use ratatui::style::{Style, Stylize};
 
-use super::SELECTED_STYLE;
+use super::{HandleEventResult, Screen, SELECTED_STYLE};
 
 #[derive(Debug, Clone)]
-pub struct WorktreesList {
+enum ScreenMode {
+    Filtering,
+    Navigating,
+}
+
+#[derive(Debug, Clone)]
+pub struct WorktreesScreen {
     pub items: Vec<String>,
     pub state: ListState,
     pub filter: String,
     pub filter_character_index: usize,
     pub filtered_items: Vec<String>,
+    mode: ScreenMode,
 }
 
-impl WorktreesList {
+impl WorktreesScreen {
     pub fn new(items: Vec<Worktree>) -> Self {
         let dirs: Vec<String> = items.iter().map(|dir| dir.path.clone()).collect();
         let mut new = Self {
@@ -27,6 +35,7 @@ impl WorktreesList {
             filter: String::new(),
             filter_character_index: 0,
             filtered_items: dirs.clone(),
+            mode: ScreenMode::Filtering,
         };
         new.state.select_first();
         new
@@ -134,8 +143,86 @@ impl WorktreesList {
             self.move_cursor_left();
         }
     }
+
     pub fn move_cursor_left(&mut self) {
         let cursor_moved_left = self.filter_character_index.saturating_sub(1);
         self.filter_character_index = self.clamp_cursor(cursor_moved_left);
+    }
+
+    pub fn handle_event(&mut self, key_event: &KeyEvent) -> HandleEventResult {
+        match self.mode {
+            ScreenMode::Navigating => {
+                if key_event.modifiers == KeyModifiers::CONTROL {
+                    match key_event.code {
+                        KeyCode::Char('f') => {
+                            self.mode = ScreenMode::Filtering;
+                        }
+                        KeyCode::Char('n') => {
+                            self.select_next();
+                        }
+                        KeyCode::Char('p') => {
+                            self.select_previous();
+                        }
+                        _ => {}
+                    }
+                } else {
+                    match key_event.code {
+                        KeyCode::Char('q') | KeyCode::Esc => return HandleEventResult::Stop,
+                        KeyCode::Char('j') | KeyCode::Down => self.select_next(),
+                        KeyCode::Char('k') | KeyCode::Up => self.select_previous(),
+                        KeyCode::Char('g') | KeyCode::Home => self.select_first(),
+                        KeyCode::Char('G') | KeyCode::End => self.select_last(),
+                        KeyCode::Char('n') => {
+                            return HandleEventResult::NewScreen(Screen::ListRepos);
+                        }
+                        KeyCode::Enter => {
+                            // app.go_to_worktree();
+                        }
+                        KeyCode::Tab => self.select_next(),
+                        _ => {}
+                    }
+                }
+            }
+            ScreenMode::Filtering => {
+                if key_event.modifiers == KeyModifiers::CONTROL {
+                    match key_event.code {
+                        KeyCode::Char('d') => {
+                            return HandleEventResult::NewScreen(Screen::ListRepos);
+                        }
+                        KeyCode::Char('n') => {
+                            self.select_next();
+                        }
+                        KeyCode::Char('p') => {
+                            self.select_previous();
+                        }
+                        _ => {}
+                    }
+                } else {
+                    match key_event.code {
+                        KeyCode::Esc => return HandleEventResult::Stop,
+                        KeyCode::Tab => {
+                            self.select_next();
+                        }
+                        KeyCode::Backspace => {
+                            self.delete_char();
+                            self.update_filtered_items();
+                            self.select_first();
+                        }
+                        KeyCode::Enter => {
+                            self.mode = ScreenMode::Navigating;
+                            // app.go_to_worktree();
+                            return HandleEventResult::Stop;
+                        }
+                        KeyCode::Char(to_insert) => {
+                            self.enter_char(to_insert);
+                            self.update_filtered_items();
+                            self.select_first();
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+        HandleEventResult::Continue
     }
 }

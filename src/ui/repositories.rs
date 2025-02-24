@@ -1,3 +1,4 @@
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::layout::{Alignment, Rect};
 use ratatui::widgets::ListState;
 
@@ -11,18 +12,25 @@ use ratatui::style::{Style, Stylize};
 
 use crate::model::Repository;
 
-use super::SELECTED_STYLE;
+use super::{HandleEventResult, Screen, SELECTED_STYLE};
 
 #[derive(Debug, Clone)]
-pub struct RepositoriesList {
+enum ScreenMode {
+    Filtering,
+    Navigating,
+}
+
+#[derive(Debug, Clone)]
+pub struct RepositoriesScreen {
     pub items: Vec<String>,
     pub state: ListState,
     pub filter: String,
     pub filter_character_index: usize,
     pub filtered_items: Vec<String>,
+    mode: ScreenMode,
 }
 
-impl RepositoriesList {
+impl RepositoriesScreen {
     pub fn new(items: Vec<Repository>) -> Self {
         let dirs: Vec<String> = items.iter().map(|dir| dir.path.clone()).collect();
         let mut new = Self {
@@ -31,6 +39,7 @@ impl RepositoriesList {
             filter: String::new(),
             filter_character_index: 0,
             filtered_items: dirs.clone(),
+            mode: ScreenMode::Filtering,
         };
         new.state.select_first();
         new
@@ -55,6 +64,7 @@ impl RepositoriesList {
 
         StatefulWidget::render(list, repos_list_area, frame.buffer_mut(), &mut self.state);
     }
+
     pub fn select_next(&mut self) {
         if let Some(index) = self.state.selected() {
             if index == self.filtered_items.len() - 1 {
@@ -137,5 +147,52 @@ impl RepositoriesList {
     pub fn move_cursor_left(&mut self) {
         let cursor_moved_left = self.filter_character_index.saturating_sub(1);
         self.filter_character_index = self.clamp_cursor(cursor_moved_left);
+    }
+
+    pub fn handle_event(&mut self, key_event: &KeyEvent) -> HandleEventResult {
+        if key_event.modifiers == KeyModifiers::CONTROL {
+            match key_event.code {
+                KeyCode::Char('n') => {
+                    self.select_next();
+                }
+                KeyCode::Char('p') => {
+                    self.select_previous();
+                }
+                _ => {}
+            }
+        } else {
+            match self.mode {
+                ScreenMode::Filtering => match key_event.code {
+                    KeyCode::Esc => return HandleEventResult::NewScreen(Screen::ListWorktrees),
+                    KeyCode::Tab => {
+                        self.select_next();
+                        return HandleEventResult::NewScreen(Screen::ListRepos);
+                    }
+                    KeyCode::Char(to_insert) => {
+                        self.enter_char(to_insert);
+                        self.update_filtered_items();
+                        self.select_first();
+                    }
+                    KeyCode::Backspace => {
+                        self.delete_char();
+                        self.update_filtered_items();
+                        self.select_first();
+                    }
+                    _ => {}
+                },
+                ScreenMode::Navigating => match key_event.code {
+                    KeyCode::Tab => self.select_next(),
+                    KeyCode::Char('q') | KeyCode::Esc => {
+                        return HandleEventResult::NewScreen(Screen::ListWorktrees);
+                    }
+                    KeyCode::Char('j') | KeyCode::Down => self.select_next(),
+                    KeyCode::Char('k') | KeyCode::Up => self.select_previous(),
+                    KeyCode::Char('g') | KeyCode::Home => self.select_first(),
+                    KeyCode::Char('G') | KeyCode::End => self.select_last(),
+                    _ => {}
+                },
+            }
+        }
+        HandleEventResult::Continue
     }
 }

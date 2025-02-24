@@ -1,7 +1,7 @@
 use crate::model::{Repository, Worktree};
 
-use super::repositories::RepositoriesList;
-use super::worktrees::WorktreesList;
+use super::repositories::RepositoriesScreen;
+use super::worktrees::WorktreesScreen;
 #[derive(Debug, Clone, Copy)]
 pub enum ListingScreenMode {
     Filtering,
@@ -9,29 +9,27 @@ pub enum ListingScreenMode {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum CurrentScreen {
-    ListWorktrees(ListingScreenMode),
-    ListRepos(ListingScreenMode),
-    CreatingWorktree,
+pub enum Screen {
+    ListWorktrees,
+    ListRepos,
+    CreateWorktree,
 }
 
 #[derive(Debug)]
 pub struct App {
-    pub worktrees: WorktreesList,
-    pub repos: RepositoriesList,
-    pub exit: bool,
+    pub worktrees: WorktreesScreen,
+    pub repos: RepositoriesScreen,
     pub selected_space: String,
-    pub current_screen: CurrentScreen,
+    pub current_screen: Screen,
 }
 
 impl App {
     pub fn new(worktrees: Vec<Worktree>, repositories: Vec<Repository>) -> Self {
         Self {
-            worktrees: WorktreesList::new(worktrees),
-            repos: RepositoriesList::new(repositories),
-            exit: false,
+            worktrees: WorktreesScreen::new(worktrees),
+            repos: RepositoriesScreen::new(repositories),
             selected_space: String::new(),
-            current_screen: CurrentScreen::ListWorktrees(ListingScreenMode::Filtering),
+            current_screen: Screen::ListWorktrees,
         }
     }
     pub fn go_to_worktree(&mut self) {
@@ -39,11 +37,6 @@ impl App {
             let selected_space = &self.worktrees.items[selected_index];
             self.selected_space = selected_space.clone();
         }
-        self.exit();
-    }
-
-    pub fn exit(&mut self) {
-        self.exit = true;
     }
 
     pub fn print_worktree_dir(&self) {

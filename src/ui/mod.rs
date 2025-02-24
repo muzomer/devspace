@@ -1,10 +1,9 @@
 use ratatui::layout::{Flex, Rect};
-use ratatui::widgets::StatefulWidget;
 use ratatui::Frame;
 use ratatui::{
-    layout::{Alignment, Constraint, Layout},
+    layout::{Constraint, Layout},
     style::{palette::tailwind::SLATE, Modifier, Style, Stylize},
-    widgets::{Block, List, ListDirection, Paragraph},
+    widgets::Paragraph,
 };
 
 mod app;
@@ -12,7 +11,7 @@ mod events;
 mod repositories;
 mod worktrees;
 
-pub use app::{App, CurrentScreen};
+pub use app::{App, Screen};
 pub use events::{handle_event, HandleEventResult};
 
 const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier::BOLD);
@@ -31,13 +30,13 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     frame.render_widget(footer, footer_area);
     app.worktrees.draw(frame, main_area);
 
-    if let CurrentScreen::ListRepos(_) = app.current_screen {
-        let popup_area = repos_list_popup(main_area, 50, 50);
+    if let Screen::ListRepos = app.current_screen {
+        let popup_area = popup_area(main_area, 50, 50);
         app.repos.draw(frame, popup_area);
     }
 }
 
-fn repos_list_popup(area: Rect, percent_x: u16, percent_y: u16) -> Rect {
+fn popup_area(area: Rect, percent_x: u16, percent_y: u16) -> Rect {
     let vertical = Layout::vertical([Constraint::Percentage(percent_y)]).flex(Flex::Center);
     let horizontal = Layout::horizontal([Constraint::Percentage(percent_x)]).flex(Flex::Center);
     let [area] = vertical.areas(area);

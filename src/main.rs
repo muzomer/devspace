@@ -58,9 +58,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut ui::App) -> io::Res
         terminal.draw(|f| ui::draw(f, app))?;
 
         if let Event::Key(key_event) = event::read()? {
-            match ui::handle_event(key_event, app) {
-                ui::HandleEventResult::Continue => continue,
-                ui::HandleEventResult::Stop => return Ok(true),
+            if let ui::HandleEventResult::Stop = ui::handle_event(key_event, app) {
+                return Ok(true);
             }
         }
     }
