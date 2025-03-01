@@ -1,6 +1,6 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::layout::{Alignment, Rect};
-use ratatui::widgets::ListState;
+use ratatui::widgets::{ListItem, ListState, Widget};
 
 use ratatui::Frame;
 use ratatui::{
@@ -20,44 +20,47 @@ enum ScreenMode {
     Navigating,
 }
 
-#[derive(Debug, Clone)]
 pub struct RepositoriesScreen {
-    pub items: Vec<String>,
+    pub repos: Vec<Repository>,
     pub state: ListState,
     pub filter: String,
     pub filter_character_index: usize,
-    pub filtered_items: Vec<String>,
+    pub filtered_repos: Vec<Repository>,
     mode: ScreenMode,
 }
 
 impl RepositoriesScreen {
-    pub fn new(items: Vec<Repository>) -> Self {
-        let dirs: Vec<String> = items.iter().map(|dir| dir.path.clone()).collect();
+    pub fn new(repos: Vec<Repository>) -> Self {
         let mut new = Self {
-            items: dirs.clone(),
+            repos: repos.clone(),
             state: ListState::default(),
             filter: String::new(),
             filter_character_index: 0,
-            filtered_items: dirs.clone(),
+            filtered_repos: repos.clone(),
             mode: ScreenMode::Filtering,
         };
         new.state.select_first();
         new
     }
 
+    pub fn selected_repo(&mut self) -> Repository {
+        self.repos[self.state.selected().unwrap()].clone()
+    }
+
     pub fn draw(&mut self, frame: &mut Frame, area: Rect) {
-        let vertical = Layout::vertical([Constraint::Length(3), Constraint::Min(1)]);
-        let [filter_area, repos_list_area] = vertical.areas(area);
+        let [filter_area, repos_list_area] =
+            Layout::vertical([Constraint::Length(3), Constraint::Min(1)]).areas(area);
 
-        let input = Paragraph::new(self.filter.as_str()).block(Block::bordered().title("Filter"));
-        frame.render_widget(input, filter_area);
+        Paragraph::new(self.filter.as_str())
+            .block(Block::bordered().title("Filter"))
+            .render(filter_area, frame.buffer_mut());
 
-        let block = Block::bordered()
-            .title("Repositories")
-            .title_alignment(Alignment::Center);
-
-        let list = List::new(self.filtered_items.clone())
-            .block(block)
+        let list = List::new(self.filtered_repos.clone())
+            .block(
+                Block::bordered()
+                    .title("Repositories")
+                    .title_alignment(Alignment::Center),
+            )
             .style(Style::new().white())
             .highlight_style(SELECTED_STYLE)
             .direction(ListDirection::TopToBottom);
@@ -67,7 +70,7 @@ impl RepositoriesScreen {
 
     pub fn select_next(&mut self) {
         if let Some(index) = self.state.selected() {
-            if index == self.filtered_items.len() - 1 {
+            if index == self.filtered_repos.len() - 1 {
                 self.state.select_first();
             } else {
                 self.state.select_next();
@@ -101,11 +104,17 @@ impl RepositoriesScreen {
     }
 
     pub fn update_filtered_items(&mut self) {
-        self.filtered_items = self
-            .items
+        self.filtered_repos = self
+            .repos
+            .clone()
             .iter()
-            .filter(|repo| repo.contains(&self.filter))
-            .cloned()
+            .filter_map(|repo| {
+                if repo.path.contains(&self.filter) {
+                    Some(repo.clone())
+                } else {
+                    None
+                }
+            })
             .collect();
     }
 
@@ -158,6 +167,12 @@ impl RepositoriesScreen {
                 KeyCode::Char('p') => {
                     self.select_previous();
                 }
+
+                KeyCode::Char('d') => {
+                    return HandleEventResult::NewScreen(Screen::CreateWorktree(
+                        self.selected_repo(),
+                    ));
+                }
                 _ => {}
             }
         } else {
@@ -178,10 +193,20 @@ impl RepositoriesScreen {
                         self.update_filtered_items();
                         self.select_first();
                     }
+                    KeyCode::Enter => {
+                        return HandleEventResult::NewScreen(Screen::CreateWorktree(
+                            self.selected_repo(),
+                        ));
+                    }
                     _ => {}
                 },
                 ScreenMode::Navigating => match key_event.code {
                     KeyCode::Tab => self.select_next(),
+                    KeyCode::Enter => {
+                        return HandleEventResult::NewScreen(Screen::CreateWorktree(
+                            self.selected_repo(),
+                        ));
+                    }
                     KeyCode::Char('q') | KeyCode::Esc => {
                         return HandleEventResult::NewScreen(Screen::ListWorktrees);
                     }
@@ -194,5 +219,11 @@ impl RepositoriesScreen {
             }
         }
         HandleEventResult::Continue
+    }
+}
+
+impl From<Repository> for ListItem<'_> {
+    fn from(value: Repository) -> Self {
+        ListItem::new(value.path.to_string())
     }
 }

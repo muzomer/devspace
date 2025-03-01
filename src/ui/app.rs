@@ -1,5 +1,6 @@
 use crate::model::{Repository, Worktree};
 
+use super::create_worktree::CreateWorktreeScreen;
 use super::repositories::RepositoriesScreen;
 use super::worktrees::WorktreesScreen;
 #[derive(Debug, Clone, Copy)]
@@ -8,17 +9,16 @@ pub enum ListingScreenMode {
     Navigating,
 }
 
-#[derive(Debug, Clone, Copy)]
 pub enum Screen {
     ListWorktrees,
     ListRepos,
-    CreateWorktree,
+    CreateWorktree(Repository),
 }
 
-#[derive(Debug)]
 pub struct App {
     pub worktrees: WorktreesScreen,
     pub repos: RepositoriesScreen,
+    pub new_worktree: CreateWorktreeScreen,
     pub selected_space: String,
     pub current_screen: Screen,
 }
@@ -28,6 +28,7 @@ impl App {
         Self {
             worktrees: WorktreesScreen::new(worktrees),
             repos: RepositoriesScreen::new(repositories),
+            new_worktree: CreateWorktreeScreen::new(),
             selected_space: String::new(),
             current_screen: Screen::ListWorktrees,
         }

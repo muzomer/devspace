@@ -5,6 +5,18 @@ pub struct Repository {
     pub path: String,
 }
 
+impl Clone for Repository {
+    fn clone(&self) -> Self {
+        let clone_repo = git2::Repository::open(self.git_repo.path())
+            .unwrap_or_else(|_| panic!("Could not clone the git repo {}", self.path));
+
+        Self {
+            path: self.path.to_string(),
+            git_repo: clone_repo,
+        }
+    }
+}
+
 pub struct Worktree {
     pub git_worktree: git2::Worktree,
     pub path: String,

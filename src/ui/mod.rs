@@ -7,6 +7,7 @@ use ratatui::{
 };
 
 mod app;
+mod create_worktree;
 mod events;
 mod repositories;
 mod worktrees;
@@ -33,6 +34,11 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     if let Screen::ListRepos = app.current_screen {
         let popup_area = popup_area(main_area, 50, 50);
         app.repos.draw(frame, popup_area);
+    }
+
+    if let Screen::CreateWorktree(_) = app.current_screen {
+        let popup_area = popup_area(main_area, 50, 20);
+        app.new_worktree.draw(frame, popup_area);
     }
 }
 

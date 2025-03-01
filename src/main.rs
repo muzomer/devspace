@@ -17,9 +17,12 @@ use ratatui::{
 fn main() -> Result<(), Box<dyn Error>> {
     let args = cli::Args::new();
     let mut terminal = setup_terminal()?;
-    let mut app = create_app(args);
-    let res = run_app(&mut terminal, &mut app);
 
+    let worktrees = model::Worktree::list(&args.worktrees_dir);
+    let repos = model::Repository::list(&args.repos_dirs);
+
+    let mut app = ui::App::new(worktrees, repos);
+    let res = run_app(&mut terminal, &mut app);
     let _ = restore_terminal(&mut terminal);
 
     if let Ok(do_print) = res {
@@ -47,19 +50,15 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<io::Stderr>>) -> io
     terminal.show_cursor()
 }
 
-fn create_app(args: cli::Args) -> ui::App {
-    let worktrees = model::Worktree::list(&args.worktrees_dir);
-    let repos = model::Repository::list(&args.repos_dirs);
-    ui::App::new(worktrees, repos)
-}
-
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut ui::App) -> io::Result<bool> {
     loop {
         terminal.draw(|f| ui::draw(f, app))?;
 
         if let Event::Key(key_event) = event::read()? {
-            if let ui::HandleEventResult::Stop = ui::handle_event(key_event, app) {
-                return Ok(true);
+            match ui::handle_event(key_event, app) {
+                ui::HandleEventResult::Stop => return Ok(true),
+                ui::HandleEventResult::NewScreen(screen) => app.current_screen = screen,
+                _ => {}
             }
         }
     }

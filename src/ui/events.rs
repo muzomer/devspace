@@ -14,16 +14,13 @@ pub fn handle_event(key_event: KeyEvent, app: &mut App) -> HandleEventResult {
     } else if key_event.modifiers == KeyModifiers::CONTROL && key_event.code == KeyCode::Char('c') {
         HandleEventResult::Stop
     } else {
-        let handle_event_result = match app.current_screen {
+        let handle_event_result = match &app.current_screen {
             Screen::ListWorktrees => app.worktrees.handle_event(&key_event),
             Screen::ListRepos => app.repos.handle_event(&key_event),
-            Screen::CreateWorktree => todo!(),
+            Screen::CreateWorktree(selected_repository) => app
+                .new_worktree
+                .handle_event(&key_event, selected_repository.clone()),
         };
-
-        if let HandleEventResult::NewScreen(screen) = handle_event_result {
-            app.current_screen = screen;
-        }
-
         handle_event_result
     }
 }
