@@ -5,7 +5,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::model::Worktree;
+use crate::git::Worktree;
 use ratatui::style::{Style, Stylize};
 
 use super::{HandleEventResult, Screen, SELECTED_STYLE};

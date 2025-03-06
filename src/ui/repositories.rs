@@ -10,7 +10,7 @@ use ratatui::{
 
 use ratatui::style::{Style, Stylize};
 
-use crate::model::Repository;
+use crate::git::Repository;
 
 use super::{HandleEventResult, Screen, SELECTED_STYLE};
 

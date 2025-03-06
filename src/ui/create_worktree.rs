@@ -8,7 +8,7 @@ use ratatui::{
     widgets::{Block, Paragraph},
 };
 
-use crate::model::Repository;
+use crate::git::Repository;
 
 use super::{HandleEventResult, Screen};
 

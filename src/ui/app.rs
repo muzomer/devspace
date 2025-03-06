@@ -1,4 +1,4 @@
-use crate::model::{Repository, Worktree};
+use crate::git::{Repository, Worktree};
 
 use super::create_worktree::CreateWorktreeScreen;
 use super::repositories::RepositoriesScreen;

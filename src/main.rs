@@ -1,9 +1,11 @@
+mod app;
 mod cli;
-mod model;
-mod ui;
+mod components;
+mod git;
 
 use std::{error::Error, io};
 
+use components::EventState;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     crossterm::{
@@ -15,24 +17,14 @@ use ratatui::{
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
+    env_logger::init();
     let args = cli::Args::new();
+    let worktrees = git::Worktree::list(&args.worktrees_dir);
+    let repos = git::Repository::list(&args.repos_dirs);
+    let mut app = app::App::new(worktrees, repos);
     let mut terminal = setup_terminal()?;
-
-    let worktrees = model::Worktree::list(&args.worktrees_dir);
-    let repos = model::Repository::list(&args.repos_dirs);
-
-    let mut app = ui::App::new(worktrees, repos);
     let res = run_app(&mut terminal, &mut app);
     let _ = restore_terminal(&mut terminal);
-
-    if let Ok(do_print) = res {
-        if do_print {
-            app.print_worktree_dir();
-        }
-    } else if let Err(err) = res {
-        println!("{err:?}");
-    }
-
     Ok(())
 }
 
@@ -50,16 +42,22 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<io::Stderr>>) -> io
     terminal.show_cursor()
 }
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut ui::App) -> io::Result<bool> {
+fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut app::App) -> io::Result<bool> {
     loop {
-        terminal.draw(|f| ui::draw(f, app))?;
+        terminal.draw(|f| app.draw(f))?;
 
-        if let Event::Key(key_event) = event::read()? {
-            match ui::handle_event(key_event, app) {
-                ui::HandleEventResult::Stop => return Ok(true),
-                ui::HandleEventResult::NewScreen(screen) => app.current_screen = screen,
-                _ => {}
+        if let Event::Key(key) = event::read()? {
+            if app.handle_key(key) == EventState::NotConsumed {
+                break Ok(false);
             }
-        }
+        };
+
+        // if let Event::Key(key_event) = event::read()? {
+        //     match ui::handle_event(key_event, app) {
+        //         ui::HandleEventResult::Stop => return Ok(true),
+        //         ui::HandleEventResult::NewScreen(screen) => app.current_screen = screen,
+        //         _ => {}
+        //     }
+        // }
     }
 }
