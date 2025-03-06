@@ -1,5 +1,10 @@
 use ratatui::widgets::ListState;
 
+pub enum Focus {
+    Filter,
+    List,
+}
+
 pub trait ListComponent<T> {
     fn select_next(&mut self) {
         if let Some(index) = self.get_state().selected() {
