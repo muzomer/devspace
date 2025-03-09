@@ -33,9 +33,9 @@ impl App {
     }
 
     pub fn draw(&mut self, frame: &mut Frame) {
-        let full_area = Layout::default()
+        let [full_area] = Layout::default()
             .constraints([Constraint::Percentage(100)])
-            .split(frame.area())[0];
+            .areas(frame.area());
 
         self.worktrees.draw(frame, full_area);
 

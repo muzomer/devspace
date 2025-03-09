@@ -1,9 +1,8 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use git2::RepositoryOpenFlags;
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
     style::{Style, Stylize},
-    widgets::{Block, List, ListDirection, ListItem, ListState, Paragraph, StatefulWidget},
+    widgets::{Block, Clear, List, ListDirection, ListItem, ListState, Paragraph, StatefulWidget},
     Frame,
 };
 
@@ -33,6 +32,8 @@ impl RepositoriesComponent {
         }
     }
     pub fn draw(&mut self, f: &mut Frame, rect: Rect) {
+        f.render_widget(Clear, rect);
+
         let [filter_area, repos_list_area] =
             Layout::vertical([Constraint::Length(3), Constraint::Min(1)]).areas(rect);
 
