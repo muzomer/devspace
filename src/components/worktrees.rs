@@ -8,10 +8,11 @@ use ratatui::{
 
 use crate::git::Worktree;
 
-use super::list::{Focus, ListComponent};
 use super::{filter::FilterComponent, EventState};
-
-const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier::BOLD);
+use super::{
+    list::{Focus, ListComponent},
+    SELECTED_STYLE,
+};
 
 pub struct WorktreesComponent {
     worktrees: Vec<Worktree>,
@@ -50,7 +51,6 @@ impl WorktreesComponent {
         match self.focus {
             Focus::Filter => {
                 let result = self.filter.handle_key(key);
-
                 if result == EventState::Consumed {
                     self.state.select_first();
                     result
@@ -63,7 +63,7 @@ impl WorktreesComponent {
                             KeyCode::Char('p') => {
                                 self.select_previous();
                             }
-                            _ => {}
+                            _ => return EventState::NotConsumed,
                         }
                     } else {
                         match key.code {
