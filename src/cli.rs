@@ -11,6 +11,7 @@ pub struct Args {
         value_name = "DIR",
         env = "DEVSPACE_GIT_WORKTREES_DIR"
     )]
+    // TODO: list worktrees from the repositories directly instead of getting the worktrees_dir from user
     pub worktrees_dir: String,
     /// Directory of the git respositories
     #[arg(

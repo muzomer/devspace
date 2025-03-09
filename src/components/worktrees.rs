@@ -1,7 +1,7 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::{palette::tailwind::SLATE, Modifier, Style, Stylize},
+    style::{Style, Stylize},
     widgets::{Block, Borders, List, ListItem, ListState, StatefulWidget},
     Frame,
 };
@@ -91,6 +91,7 @@ impl WorktreesComponent {
 
 impl From<&Worktree> for ListItem<'_> {
     fn from(value: &Worktree) -> Self {
+        // TODO: only display the worktree name and repository
         ListItem::new(value.path.clone().to_string())
     }
 }
