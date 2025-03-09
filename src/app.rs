@@ -6,7 +6,7 @@ use ratatui::{
 };
 
 use crate::{
-    components::{EventState, RepositoriesComponent, WorktreesComponent},
+    components::{CreateWorktreeComponent, EventState, RepositoriesComponent, WorktreesComponent},
     git::{Repository, Worktree},
 };
 
@@ -20,6 +20,7 @@ pub enum Focus {
 pub struct App {
     pub worktrees: WorktreesComponent,
     pub repositories: RepositoriesComponent,
+    pub create_worktree: CreateWorktreeComponent,
     pub focus: Focus,
 }
 
@@ -28,6 +29,7 @@ impl App {
         Self {
             worktrees: WorktreesComponent::new(worktrees),
             repositories: RepositoriesComponent::new(repositories),
+            create_worktree: CreateWorktreeComponent::new(),
             focus: Focus::Worktrees,
         }
     }
@@ -42,6 +44,11 @@ impl App {
         if let Focus::Repositories = self.focus {
             let popup_area = self.popup_area(full_area, 50, 50);
             self.repositories.draw(frame, popup_area);
+        }
+
+        if let Focus::CreateWorktree = self.focus {
+            let popup_area = self.popup_area(full_area, 50, 30);
+            self.create_worktree.draw(frame, popup_area);
         }
     }
 
@@ -63,13 +70,20 @@ impl App {
                 if result == EventState::Consumed {
                     result
                 } else if key.modifiers == KeyModifiers::CONTROL && key.code == KeyCode::Char('d') {
-                    // self.focus = Focus::Repositories;
+                    self.focus = Focus::CreateWorktree;
                     EventState::Consumed
                 } else {
                     EventState::NotConsumed
                 }
             }
-            Focus::CreateWorktree => todo!(),
+            Focus::CreateWorktree => {
+                let result = self.create_worktree.handle_key(key);
+                if result == EventState::Consumed {
+                    result
+                } else {
+                    EventState::NotConsumed
+                }
+            }
         }
     }
 

@@ -67,7 +67,7 @@ impl RepositoriesComponent {
                             KeyCode::Char('p') => {
                                 self.select_previous();
                             }
-                            _ => {}
+                            _ => return EventState::NotConsumed,
                         }
                     } else {
                         match key.code {
