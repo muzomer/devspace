@@ -1,5 +1,4 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use log::debug;
 use ratatui::{
     layout::{Constraint, Flex, Layout, Rect},
     Frame,

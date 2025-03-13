@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let repos = git::Repository::list(&args.repos_dirs);
     let mut app = app::App::new(worktrees, repos);
     let mut terminal = setup_terminal()?;
-    let res = run_app(&mut terminal, &mut app);
+    let _ = run_app(&mut terminal, &mut app);
     let _ = restore_terminal(&mut terminal);
     Ok(())
 }

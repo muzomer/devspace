@@ -4,7 +4,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
     style::{Style, Stylize},
-    widgets::{Block, Clear, List, ListDirection, ListItem, ListState, Paragraph, StatefulWidget},
+    widgets::{Block, Clear, List, ListDirection, ListItem, ListState, StatefulWidget},
     Frame,
 };
 
@@ -17,8 +17,8 @@ use super::{
 pub struct RepositoriesComponent {
     repositories: Vec<Repository>,
     filter: FilterComponent,
-
     state: ListState,
+    selected_index: Option<usize>,
     focus: Focus,
 }
 
@@ -28,6 +28,7 @@ impl RepositoriesComponent {
             repositories,
             filter: FilterComponent::default(),
             state: ListState::default().with_selected(Some(0)),
+            selected_index: Some(0),
             focus: Focus::Filter,
         }
     }
@@ -120,6 +121,6 @@ impl ListComponent<Repository> for RepositoriesComponent {
     }
 
     fn update_selected_index(&mut self, index: usize) {
-        todo!()
+        self.selected_index = Some(index);
     }
 }

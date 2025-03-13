@@ -1,4 +1,4 @@
-use log::{debug, error, info};
+use log::error;
 use std::ffi::OsStr;
 use std::fs::read_dir;
 use std::io;
