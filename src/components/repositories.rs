@@ -1,3 +1,5 @@
+use super::list::ItemOrder;
+use crate::git::Repository;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
@@ -5,8 +7,6 @@ use ratatui::{
     widgets::{Block, Clear, List, ListDirection, ListItem, ListState, Paragraph, StatefulWidget},
     Frame,
 };
-
-use crate::git::Repository;
 
 use super::{
     filter::FilterComponent,
@@ -62,10 +62,10 @@ impl RepositoriesComponent {
                     if key.modifiers == KeyModifiers::CONTROL {
                         match key.code {
                             KeyCode::Char('n') => {
-                                self.select_next();
+                                self.select(ItemOrder::Next);
                             }
                             KeyCode::Char('p') => {
-                                self.select_previous();
+                                self.select(ItemOrder::Previous);
                             }
                             _ => return EventState::NotConsumed,
                         }
@@ -80,10 +80,10 @@ impl RepositoriesComponent {
             }
             Focus::List => {
                 match key.code {
-                    KeyCode::Char('j') | KeyCode::Down => self.select_next(),
-                    KeyCode::Char('k') | KeyCode::Up => self.select_previous(),
-                    KeyCode::Char('g') | KeyCode::Home => self.select_first(),
-                    KeyCode::Char('G') | KeyCode::End => self.select_last(),
+                    KeyCode::Char('j') | KeyCode::Down => self.select(ItemOrder::Next),
+                    KeyCode::Char('k') | KeyCode::Up => self.select(ItemOrder::Previous),
+                    KeyCode::Char('g') | KeyCode::Home => self.select(ItemOrder::First),
+                    KeyCode::Char('G') | KeyCode::End => self.select(ItemOrder::Last),
                     KeyCode::Tab => self.focus = Focus::Filter,
                     _ => return EventState::NotConsumed,
                 }
@@ -117,5 +117,9 @@ impl ListComponent<Repository> for RepositoriesComponent {
 
     fn get_state(&mut self) -> &mut ListState {
         &mut self.state
+    }
+
+    fn update_selected_index(&mut self, index: usize) {
+        todo!()
     }
 }

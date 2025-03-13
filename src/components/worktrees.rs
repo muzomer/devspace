@@ -10,7 +10,7 @@ use crate::git::Worktree;
 
 use super::{filter::FilterComponent, EventState};
 use super::{
-    list::{Focus, ListComponent},
+    list::{Focus, ItemOrder, ListComponent},
     SELECTED_STYLE,
 };
 
@@ -19,6 +19,8 @@ pub struct WorktreesComponent {
     filter: FilterComponent,
     state: ListState,
     focus: Focus,
+
+    pub selected_index: Option<usize>,
 }
 
 impl WorktreesComponent {
@@ -28,6 +30,7 @@ impl WorktreesComponent {
             filter: FilterComponent::default(),
             state: ListState::default().with_selected(Some(0)),
             focus: Focus::Filter,
+            selected_index: None,
         }
     }
 
@@ -52,16 +55,15 @@ impl WorktreesComponent {
             Focus::Filter => {
                 let result = self.filter.handle_key(key);
                 if result == EventState::Consumed {
-                    self.state.select_first();
                     result
                 } else {
                     if key.modifiers == KeyModifiers::CONTROL {
                         match key.code {
                             KeyCode::Char('n') => {
-                                self.select_next();
+                                self.select(ItemOrder::Next);
                             }
                             KeyCode::Char('p') => {
-                                self.select_previous();
+                                self.select(ItemOrder::Previous);
                             }
                             _ => return EventState::NotConsumed,
                         }
@@ -76,10 +78,10 @@ impl WorktreesComponent {
             }
             Focus::List => {
                 match key.code {
-                    KeyCode::Char('j') | KeyCode::Down => self.select_next(),
-                    KeyCode::Char('k') | KeyCode::Up => self.select_previous(),
-                    KeyCode::Char('g') | KeyCode::Home => self.select_first(),
-                    KeyCode::Char('G') | KeyCode::End => self.select_last(),
+                    KeyCode::Char('j') | KeyCode::Down => self.select(ItemOrder::Next),
+                    KeyCode::Char('k') | KeyCode::Up => self.select(ItemOrder::Previous),
+                    KeyCode::Char('g') | KeyCode::Home => self.select(ItemOrder::First),
+                    KeyCode::Char('G') | KeyCode::End => self.select(ItemOrder::Last),
                     KeyCode::Tab => self.focus = Focus::Filter,
                     _ => return EventState::NotConsumed,
                 }
@@ -106,5 +108,9 @@ impl ListComponent<Worktree> for WorktreesComponent {
 
     fn get_state(&mut self) -> &mut ListState {
         &mut self.state
+    }
+
+    fn update_selected_index(&mut self, index: usize) {
+        self.selected_index = Some(index);
     }
 }

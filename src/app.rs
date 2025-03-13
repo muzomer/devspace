@@ -69,11 +69,14 @@ impl App {
                 let result = self.repositories.handle_key(key);
                 if result == EventState::Consumed {
                     result
-                } else if key.modifiers == KeyModifiers::CONTROL && key.code == KeyCode::Char('d') {
+                } else if (key.modifiers == KeyModifiers::CONTROL && key.code == KeyCode::Char('d'))
+                    || (key.code == KeyCode::Enter)
+                {
                     self.focus = Focus::CreateWorktree;
                     EventState::Consumed
                 } else {
-                    EventState::NotConsumed
+                    self.focus = Focus::Worktrees;
+                    EventState::Consumed
                 }
             }
             Focus::CreateWorktree => {
@@ -81,7 +84,8 @@ impl App {
                 if result == EventState::Consumed {
                     result
                 } else {
-                    EventState::NotConsumed
+                    self.focus = Focus::Worktrees;
+                    EventState::Consumed
                 }
             }
         }
