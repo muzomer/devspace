@@ -1,5 +1,7 @@
-use log::error;
+use git2::WorktreeAddOptions;
+use log::{debug, error};
 use std::ffi::OsStr;
+use std::fs;
 use std::fs::read_dir;
 use std::io;
 use std::path::Path;
@@ -7,24 +9,72 @@ use std::path::PathBuf;
 
 pub struct Repository {
     pub git_repo: git2::Repository,
-    pub path: String,
 }
 
 impl Clone for Repository {
     fn clone(&self) -> Self {
         let clone_repo = git2::Repository::open(self.git_repo.path())
-            .unwrap_or_else(|_| panic!("Could not clone the git repo {}", self.path));
+            .unwrap_or_else(|_| panic!("Could not clone the git repo {}", self.path()));
 
         Self {
-            path: self.path.to_string(),
             git_repo: clone_repo,
         }
     }
 }
 
+impl Repository {
+    pub fn new_worktree(&self, worktree_name: &str, worktrees_dir: &str) -> Option<Worktree> {
+        let worktree_path = PathBuf::from(worktrees_dir)
+            .join(self.name())
+            .join(worktree_name);
+
+        debug!("Path: {:#?}", worktree_path);
+
+        let _ = fs::create_dir_all(&worktree_path);
+        let result = self
+            .git_repo
+            .worktree(worktree_name, Path::new(&worktree_path), None);
+
+        match result {
+            Ok(created_worktree) => Some(Worktree {
+                git_worktree: created_worktree,
+            }),
+            Err(error) => {
+                panic!(
+                    "Could not create the worktree {}. Error: {}",
+                    worktree_name, error
+                );
+                // None
+            }
+        }
+    }
+
+    fn new_branch(&self, name: &str) -> git2::Reference<'_> {
+        let current_head = self.git_repo.head().unwrap();
+        let created_branch = self
+            .git_repo
+            .branch(name, &current_head.peel_to_commit().unwrap(), false)
+            .unwrap();
+        debug!("Is the new branch head: {}", created_branch.is_head());
+        created_branch.into_reference()
+    }
+
+    pub fn path(&self) -> &str {
+        self.git_repo.path().to_str().unwrap()
+    }
+
+    pub fn name(&self) -> String {
+        let path = String::from(self.git_repo.path().to_str().unwrap());
+        path.replace("/.git/", "")
+            .split("/")
+            .last()
+            .unwrap()
+            .to_string()
+    }
+}
+
 pub struct Worktree {
     pub git_worktree: git2::Worktree,
-    pub path: String,
 }
 
 impl Worktree {
@@ -33,7 +83,6 @@ impl Worktree {
         let worktree = git2::Worktree::open_from_repository(&repo)?;
         Ok(Self {
             git_worktree: worktree,
-            path: path.to_string(),
         })
     }
 
@@ -61,15 +110,16 @@ impl Worktree {
             }
         }
     }
+
+    pub fn path(&self) -> &str {
+        self.git_worktree.path().to_str().unwrap()
+    }
 }
 
 impl Repository {
     pub fn from_path(path: &str) -> Result<Self, git2::Error> {
         let repo = git2::Repository::open(path)?;
-        Ok(Self {
-            git_repo: repo,
-            path: path.to_string(),
-        })
+        Ok(Self { git_repo: repo })
     }
 
     pub fn list(path: &str) -> Vec<Self> {

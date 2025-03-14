@@ -18,10 +18,7 @@ use ratatui::{
 
 fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
-    let args = cli::Args::new();
-    let worktrees = git::Worktree::list(&args.worktrees_dir);
-    let repos = git::Repository::list(&args.repos_dirs);
-    let mut app = app::App::new(worktrees, repos);
+    let mut app = app::App::new();
     let mut terminal = setup_terminal()?;
     let _ = run_app(&mut terminal, &mut app);
     let _ = restore_terminal(&mut terminal);

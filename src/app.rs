@@ -5,8 +5,9 @@ use ratatui::{
 };
 
 use crate::{
+    cli::{self, Args},
     components::{CreateWorktreeComponent, EventState, RepositoriesComponent, WorktreesComponent},
-    git::{Repository, Worktree},
+    git::{self, Repository, Worktree},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -17,18 +18,23 @@ pub enum Focus {
 }
 
 pub struct App {
-    pub worktrees: WorktreesComponent,
-    pub repositories: RepositoriesComponent,
-    pub create_worktree: CreateWorktreeComponent,
-    pub focus: Focus,
+    worktrees: WorktreesComponent,
+    repositories: RepositoriesComponent,
+    create_worktree: CreateWorktreeComponent,
+    args: Args,
+    focus: Focus,
 }
 
 impl App {
-    pub fn new(worktrees: Vec<Worktree>, repositories: Vec<Repository>) -> Self {
+    pub fn new() -> Self {
+        let args = cli::Args::new();
+        let worktrees = git::Worktree::list(&args.worktrees_dir);
+        let repositories = git::Repository::list(&args.repos_dirs);
         Self {
             worktrees: WorktreesComponent::new(worktrees),
             repositories: RepositoriesComponent::new(repositories),
             create_worktree: CreateWorktreeComponent::new(),
+            args,
             focus: Focus::Worktrees,
         }
     }
@@ -83,6 +89,9 @@ impl App {
                 if result == EventState::Consumed {
                     result
                 } else {
+                    if key.code == KeyCode::Enter {
+                        self.create_new_worktree()
+                    }
                     self.focus = Focus::Worktrees;
                     EventState::Consumed
                 }
@@ -96,6 +105,17 @@ impl App {
         let [area] = vertical.areas(area);
         let [area] = horizontal.areas(area);
         area
+    }
+
+    fn create_new_worktree(&mut self) {
+        if !self.create_worktree.new_worktree_name.is_empty() {
+            if let Some(selected_repository) = self.repositories.selected_repository() {
+                selected_repository.new_worktree(
+                    &self.create_worktree.new_worktree_name,
+                    &self.args.worktrees_dir,
+                );
+            }
+        }
     }
 
     // pub fn go_to_worktree(&mut self) {

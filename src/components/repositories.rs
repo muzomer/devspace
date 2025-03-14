@@ -1,6 +1,7 @@
 use super::list::ItemOrder;
 use crate::git::Repository;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use log::debug;
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
     style::{Style, Stylize},
@@ -57,7 +58,7 @@ impl RepositoriesComponent {
             Focus::Filter => {
                 let result = self.filter.handle_key(key);
                 if result == EventState::Consumed {
-                    self.state.select_first();
+                    self.select(ItemOrder::First);
                     result
                 } else {
                     if key.modifiers == KeyModifiers::CONTROL {
@@ -92,19 +93,23 @@ impl RepositoriesComponent {
             }
         }
     }
+
+    pub fn selected_repository(&mut self) -> Option<&Repository> {
+        match self.selected_index {
+            Some(index) => {
+                let filtered_repositories = self.filtered_items();
+                let selected_repository = filtered_repositories.get(index).unwrap();
+                debug!("selected repository {}", selected_repository.path());
+                Some(selected_repository)
+            }
+            None => None,
+        }
+    }
 }
 
 impl From<&Repository> for ListItem<'_> {
     fn from(value: &Repository) -> Self {
-        ListItem::new(
-            value
-                .path
-                .clone()
-                .split('/')
-                .last()
-                .unwrap_or("")
-                .to_string(),
-        )
+        ListItem::new(value.name())
     }
 }
 
@@ -112,7 +117,7 @@ impl ListComponent<Repository> for RepositoriesComponent {
     fn filtered_items(&mut self) -> Vec<&Repository> {
         self.repositories
             .iter()
-            .filter(|worktree| worktree.path.contains(self.filter.value.as_str()))
+            .filter(|worktree| worktree.path().contains(self.filter.value.as_str()))
             .collect()
     }
 

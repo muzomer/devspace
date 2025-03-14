@@ -89,12 +89,19 @@ impl WorktreesComponent {
             }
         }
     }
+
+    pub fn selected_worktree(&self) -> Option<&Worktree> {
+        match self.selected_index {
+            Some(index) => Some(&self.worktrees[index]),
+            None => None,
+        }
+    }
 }
 
 impl From<&Worktree> for ListItem<'_> {
     fn from(value: &Worktree) -> Self {
         // TODO: only display the worktree name and repository
-        ListItem::new(value.path.clone().to_string())
+        ListItem::new(value.path().to_string())
     }
 }
 
@@ -102,7 +109,7 @@ impl ListComponent<Worktree> for WorktreesComponent {
     fn filtered_items(&mut self) -> Vec<&Worktree> {
         self.worktrees
             .iter()
-            .filter(|worktree| worktree.path.contains(self.filter.value.as_str()))
+            .filter(|worktree| worktree.path().contains(self.filter.value.as_str()))
             .collect()
     }
 
