@@ -1,7 +1,9 @@
 mod app;
 mod cli;
 mod components;
+mod dirs;
 mod git;
+mod logs;
 
 use std::{error::Error, io};
 
@@ -17,7 +19,7 @@ use ratatui::{
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
-    env_logger::init();
+    logs::initialize_logging()?;
     let mut app = app::App::new();
     let mut terminal = setup_terminal()?;
     let _ = run_app(&mut terminal, &mut app);
@@ -48,13 +50,5 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut app::App) -> io::Re
                 break Ok(false);
             }
         };
-
-        // if let Event::Key(key_event) = event::read()? {
-        //     match ui::handle_event(key_event, app) {
-        //         ui::HandleEventResult::Stop => return Ok(true),
-        //         ui::HandleEventResult::NewScreen(screen) => app.current_screen = screen,
-        //         _ => {}
-        //     }
-        // }
     }
 }

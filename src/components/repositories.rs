@@ -1,7 +1,6 @@
 use super::list::ItemOrder;
 use crate::git::Repository;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use log::debug;
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
     style::{Style, Stylize},

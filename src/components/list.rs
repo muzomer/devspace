@@ -1,4 +1,3 @@
-use log::debug;
 use ratatui::widgets::ListState;
 
 pub enum Focus {

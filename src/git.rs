@@ -1,11 +1,11 @@
 use git2::WorktreeAddOptions;
-use log::{debug, error};
-use std::ffi::OsStr;
-use std::fs;
-use std::fs::read_dir;
-use std::io;
-use std::path::Path;
-use std::path::PathBuf;
+use std::{
+    ffi::OsStr,
+    fs::{self, read_dir},
+    io,
+    path::{Path, PathBuf},
+};
+use tracing::error;
 
 pub struct Worktree {
     pub git_worktree: git2::Worktree,

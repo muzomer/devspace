@@ -90,12 +90,12 @@ impl WorktreesComponent {
         }
     }
 
-    pub fn selected_worktree(&self) -> Option<&Worktree> {
-        match self.selected_index {
-            Some(index) => Some(&self.worktrees[index]),
-            None => None,
-        }
-    }
+    // pub fn selected_worktree(&self) -> Option<&Worktree> {
+    //     match self.selected_index {
+    //         Some(index) => Some(&self.worktrees[index]),
+    //         None => None,
+    //     }
+    // }
 }
 
 impl From<&Worktree> for ListItem<'_> {

@@ -1,5 +1,4 @@
 use clap::Parser;
-use log::debug;
 
 #[derive(Debug, Parser)]
 #[command(version, about, long_about = None)]
@@ -25,9 +24,6 @@ pub struct Args {
 
 impl Args {
     pub fn new() -> Self {
-        let parsed_args = Self::parse();
-        debug!("Worktrees dir: {}", parsed_args.worktrees_dir);
-        debug!("Repositories dir: {}", parsed_args.repos_dir);
-        parsed_args
+        Self::parse()
     }
 }

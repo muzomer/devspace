@@ -5,9 +5,9 @@ use ratatui::{
 };
 
 use crate::{
-    cli::{self, Args},
+    cli,
     components::{CreateWorktreeComponent, EventState, RepositoriesComponent, WorktreesComponent},
-    git::{self, Repository, Worktree},
+    git,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -21,7 +21,7 @@ pub struct App {
     worktrees: WorktreesComponent,
     repositories: RepositoriesComponent,
     create_worktree: CreateWorktreeComponent,
-    args: Args,
+    args: cli::Args,
     focus: Focus,
 }
 
