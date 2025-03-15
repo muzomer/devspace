@@ -7,71 +7,6 @@ use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 
-pub struct Repository {
-    pub git_repo: git2::Repository,
-}
-
-impl Clone for Repository {
-    fn clone(&self) -> Self {
-        let clone_repo = git2::Repository::open(self.git_repo.path())
-            .unwrap_or_else(|_| panic!("Could not clone the git repo {}", self.path()));
-
-        Self {
-            git_repo: clone_repo,
-        }
-    }
-}
-
-impl Repository {
-    pub fn new_worktree(&self, worktree_name: &str, worktrees_dir: &str) -> Option<Worktree> {
-        let repo_worktrees_dir = PathBuf::from(worktrees_dir).join(self.name());
-        let new_worktree_dir = PathBuf::from(&repo_worktrees_dir).join(worktree_name);
-
-        // Create the directory to store the worktrees of the selected repository
-        let _ = fs::create_dir_all(&repo_worktrees_dir);
-
-        let mut create_worktree_options = WorktreeAddOptions::new();
-        create_worktree_options.checkout_existing(true);
-        let result = self.git_repo.worktree(
-            worktree_name,
-            new_worktree_dir.as_path(),
-            Some(&create_worktree_options),
-        );
-
-        match result {
-            Ok(created_worktree) => Some(Worktree {
-                git_worktree: created_worktree,
-            }),
-            Err(error) => {
-                panic!(
-                    "Could not create the worktree {}. Error: {}",
-                    worktree_name, error
-                );
-                // None
-            }
-        }
-    }
-
-    fn cleanup(&self) {
-        // TODO: remove the worktree directory if exists
-        // TODO: remove the branch if exists
-        // TODO: remove the worktree from the repo/.git/worktree directory
-    }
-
-    pub fn path(&self) -> &str {
-        self.git_repo.path().to_str().unwrap()
-    }
-
-    pub fn name(&self) -> String {
-        let path = String::from(self.git_repo.path().to_str().unwrap());
-        path.replace("/.git/", "")
-            .split("/")
-            .last()
-            .unwrap()
-            .to_string()
-    }
-}
-
 pub struct Worktree {
     pub git_worktree: git2::Worktree,
 }
@@ -115,34 +50,96 @@ impl Worktree {
     }
 }
 
+pub struct Repository {
+    pub git_repo: git2::Repository,
+}
+
+impl Clone for Repository {
+    fn clone(&self) -> Self {
+        let clone_repo = git2::Repository::open(self.git_repo.path())
+            .unwrap_or_else(|_| panic!("Could not clone the git repo {}", self.path()));
+
+        Self {
+            git_repo: clone_repo,
+        }
+    }
+}
+
 impl Repository {
     pub fn from_path(path: &str) -> Result<Self, git2::Error> {
         let repo = git2::Repository::open(path)?;
         Ok(Self { git_repo: repo })
     }
+    pub fn new_worktree(&self, worktree_name: &str, worktrees_dir: &str) -> Option<Worktree> {
+        let repo_worktrees_dir = PathBuf::from(worktrees_dir).join(self.name());
+        let new_worktree_dir = PathBuf::from(&repo_worktrees_dir).join(worktree_name);
 
-    pub fn list(path: &str) -> Vec<Self> {
-        match list_git_dirs(path) {
-            Ok(git_dirs) => git_dirs
-                .iter()
-                .filter_map(|dir| match Self::from_path(dir) {
-                    Ok(created_repo) => Some(created_repo),
-                    Err(err) => {
-                        error!(
-                            "Could not create repository from path {}. Error: {}",
-                            dir, err
-                        );
-                        None
-                    }
-                })
-                .collect(),
-            Err(err) => {
-                error!(
-                    "Could not retrieve the git directories for repositories: {}",
-                    err
+        // Create the directory to store the worktrees of the selected repository
+        let _ = fs::create_dir_all(&repo_worktrees_dir);
+
+        let mut create_worktree_options = WorktreeAddOptions::new();
+        create_worktree_options.checkout_existing(true);
+        let result = self.git_repo.worktree(
+            worktree_name,
+            new_worktree_dir.as_path(),
+            Some(&create_worktree_options),
+        );
+
+        match result {
+            Ok(created_worktree) => Some(Worktree {
+                git_worktree: created_worktree,
+            }),
+            Err(error) => {
+                panic!(
+                    "Could not create the worktree {}. Error: {}",
+                    worktree_name, error
                 );
-                Vec::new()
+                // None
             }
+        }
+    }
+
+    // fn cleanup(&self) {
+    // TODO: remove the worktree directory if exists
+    // TODO: remove the branch if exists
+    // TODO: remove the worktree from the repo/.git/worktree directory
+    // }
+
+    fn path(&self) -> &str {
+        self.git_repo.path().to_str().unwrap()
+    }
+
+    pub fn name(&self) -> String {
+        let path = String::from(self.git_repo.path().to_str().unwrap());
+        path.replace("/.git/", "")
+            .split("/")
+            .last()
+            .unwrap()
+            .to_string()
+    }
+}
+
+pub fn list_repositories(path: &str) -> Vec<Repository> {
+    match list_git_dirs(path) {
+        Ok(git_dirs) => git_dirs
+            .iter()
+            .filter_map(|dir| match Repository::from_path(dir) {
+                Ok(created_repo) => Some(created_repo),
+                Err(err) => {
+                    error!(
+                        "Could not create repository from path {}. Error: {}",
+                        dir, err
+                    );
+                    None
+                }
+            })
+            .collect(),
+        Err(err) => {
+            error!(
+                "Could not retrieve the git directories for repositories: {}",
+                err
+            );
+            Vec::new()
         }
     }
 }

@@ -4,7 +4,7 @@ use log::debug;
 #[derive(Debug, Parser)]
 #[command(version, about, long_about = None)]
 pub struct Args {
-    /// Directory where the git worktrees are stored
+    /// Directory where the new git worktrees will be stored
     #[arg(
         short = 'd',
         long = "git-worktrees-dir",
@@ -20,14 +20,14 @@ pub struct Args {
         value_name = "DIR",
         env = "DEVSPACE_GIT_REPOS_DIR"
     )]
-    pub repos_dirs: String,
+    pub repos_dir: String,
 }
 
 impl Args {
     pub fn new() -> Self {
         let parsed_args = Self::parse();
         debug!("Worktrees dir: {}", parsed_args.worktrees_dir);
-        debug!("Repositories dir: {}", parsed_args.repos_dirs);
+        debug!("Repositories dir: {}", parsed_args.repos_dir);
         parsed_args
     }
 }

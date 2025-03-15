@@ -116,7 +116,7 @@ impl ListComponent<Repository> for RepositoriesComponent {
     fn filtered_items(&mut self) -> Vec<&Repository> {
         self.repositories
             .iter()
-            .filter(|worktree| worktree.path().contains(self.filter.value.as_str()))
+            .filter(|repository| repository.name().contains(self.filter.value.as_str()))
             .collect()
     }
 

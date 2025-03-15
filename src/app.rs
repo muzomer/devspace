@@ -28,8 +28,8 @@ pub struct App {
 impl App {
     pub fn new() -> Self {
         let args = cli::Args::new();
+        let repositories = git::list_repositories(&args.repos_dir);
         let worktrees = git::Worktree::list(&args.worktrees_dir);
-        let repositories = git::Repository::list(&args.repos_dirs);
         Self {
             worktrees: WorktreesComponent::new(worktrees),
             repositories: RepositoriesComponent::new(repositories),
