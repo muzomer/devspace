@@ -12,37 +12,8 @@ pub struct Worktree {
 }
 
 impl Worktree {
-    pub fn from_path(path: &str) -> Result<Self, git2::Error> {
-        let repo = git2::Repository::open(path)?;
-        let worktree = git2::Worktree::open_from_repository(&repo)?;
-        Ok(Self {
-            git_worktree: worktree,
-        })
-    }
-
-    pub fn list(path: &str) -> Vec<Self> {
-        match list_git_dirs(path) {
-            Ok(git_dirs) => git_dirs
-                .iter()
-                .filter_map(|dir| match Self::from_path(dir) {
-                    Ok(created_worktree) => Some(created_worktree),
-                    Err(err) => {
-                        error!(
-                            "Could not create worktree from path {}. Error: {}",
-                            dir, err
-                        );
-                        None
-                    }
-                })
-                .collect(),
-            Err(err) => {
-                error!(
-                    "Could not list the directories of the git worktrees: {}",
-                    err
-                );
-                Vec::new()
-            }
-        }
+    pub fn from_git_worktree(git_worktree: git2::Worktree) -> Self {
+        Self { git_worktree }
     }
 
     pub fn path(&self) -> &str {
@@ -52,25 +23,23 @@ impl Worktree {
 
 pub struct Repository {
     pub git_repo: git2::Repository,
-}
-
-impl Clone for Repository {
-    fn clone(&self) -> Self {
-        let clone_repo = git2::Repository::open(self.git_repo.path())
-            .unwrap_or_else(|_| panic!("Could not clone the git repo {}", self.path()));
-
-        Self {
-            git_repo: clone_repo,
-        }
-    }
+    pub worktrees: Vec<Worktree>,
 }
 
 impl Repository {
     pub fn from_path(path: &str) -> Result<Self, git2::Error> {
         let repo = git2::Repository::open(path)?;
-        Ok(Self { git_repo: repo })
+        let worktress = list_worktrees(&repo);
+        Ok(Self {
+            git_repo: repo,
+            worktrees: worktress,
+        })
     }
-    pub fn new_worktree(&self, worktree_name: &str, worktrees_dir: &str) -> Option<Worktree> {
+    pub fn create_new_worktree(
+        &self,
+        worktree_name: &str,
+        worktrees_dir: &str,
+    ) -> Option<Worktree> {
         let repo_worktrees_dir = PathBuf::from(worktrees_dir).join(self.name());
         let new_worktree_dir = PathBuf::from(&repo_worktrees_dir).join(worktree_name);
 
@@ -105,10 +74,6 @@ impl Repository {
     // TODO: remove the worktree from the repo/.git/worktree directory
     // }
 
-    fn path(&self) -> &str {
-        self.git_repo.path().to_str().unwrap()
-    }
-
     pub fn name(&self) -> String {
         let path = String::from(self.git_repo.path().to_str().unwrap());
         path.replace("/.git/", "")
@@ -117,6 +82,25 @@ impl Repository {
             .unwrap()
             .to_string()
     }
+}
+
+fn list_worktrees(git_repo: &git2::Repository) -> Vec<Worktree> {
+    let mut git_worktrees: Vec<Worktree> = Vec::new();
+    match git_repo.worktrees() {
+        Ok(worktrees_arr) => {
+            worktrees_arr.iter().for_each(|worktree| {
+                if let Some(worktree_name) = worktree {
+                    if let Ok(git_worktree) = git_repo.find_worktree(worktree_name) {
+                        git_worktrees.push(Worktree::from_git_worktree(git_worktree));
+                    }
+                }
+            });
+        }
+        Err(error) => {
+            error!("Could not list the worktrees for repository {}", error);
+        }
+    };
+    git_worktrees
 }
 
 pub fn list_repositories(path: &str) -> Vec<Repository> {

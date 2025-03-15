@@ -14,16 +14,16 @@ use super::{
     EventState, SELECTED_STYLE,
 };
 
-pub struct RepositoriesComponent {
-    repositories: Vec<Repository>,
+pub struct RepositoriesComponent<'a> {
+    repositories: &'a [Repository],
     filter: FilterComponent,
     state: ListState,
     selected_index: Option<usize>,
     focus: Focus,
 }
 
-impl RepositoriesComponent {
-    pub fn new(repositories: Vec<Repository>) -> Self {
+impl<'a> RepositoriesComponent<'a> {
+    pub fn new(repositories: &'a [Repository]) -> Self {
         Self {
             repositories,
             filter: FilterComponent::default(),
@@ -111,7 +111,7 @@ impl From<&Repository> for ListItem<'_> {
     }
 }
 
-impl ListComponent<Repository> for RepositoriesComponent {
+impl ListComponent<Repository> for RepositoriesComponent<'_> {
     fn filtered_items(&mut self) -> Vec<&Repository> {
         self.repositories
             .iter()

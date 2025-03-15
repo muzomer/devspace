@@ -5,9 +5,9 @@ use ratatui::{
 };
 
 use crate::{
-    cli,
+    cli::Args,
     components::{CreateWorktreeComponent, EventState, RepositoriesComponent, WorktreesComponent},
-    git,
+    git::Repository,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -17,25 +17,22 @@ pub enum Focus {
     CreateWorktree,
 }
 
-pub struct App {
-    worktrees: WorktreesComponent,
-    repositories: RepositoriesComponent,
+pub struct App<'a> {
+    worktrees: WorktreesComponent<'a>,
+    repositories: RepositoriesComponent<'a>,
     create_worktree: CreateWorktreeComponent,
-    args: cli::Args,
+    args: &'a Args,
     focus: Focus,
 }
 
-impl App {
-    pub fn new() -> Self {
-        let args = cli::Args::new();
-        let repositories = git::list_repositories(&args.repos_dir);
-        let worktrees = git::Worktree::list(&args.worktrees_dir);
+impl<'a> App<'a> {
+    pub fn new(repositories: &'a [Repository], args: &'a Args) -> App<'a> {
         Self {
-            worktrees: WorktreesComponent::new(worktrees),
+            worktrees: WorktreesComponent::new(repositories),
             repositories: RepositoriesComponent::new(repositories),
             create_worktree: CreateWorktreeComponent::new(),
-            args,
             focus: Focus::Worktrees,
+            args,
         }
     }
 
@@ -110,7 +107,7 @@ impl App {
     fn create_new_worktree(&mut self) {
         if !self.create_worktree.new_worktree_name.is_empty() {
             if let Some(selected_repository) = self.repositories.selected_repository() {
-                selected_repository.new_worktree(
+                selected_repository.create_new_worktree(
                     &self.create_worktree.new_worktree_name,
                     &self.args.worktrees_dir,
                 );

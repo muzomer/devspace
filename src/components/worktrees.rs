@@ -6,7 +6,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::git::Worktree;
+use crate::git::{Repository, Worktree};
 
 use super::{filter::FilterComponent, EventState};
 use super::{
@@ -14,8 +14,8 @@ use super::{
     SELECTED_STYLE,
 };
 
-pub struct WorktreesComponent {
-    worktrees: Vec<Worktree>,
+pub struct WorktreesComponent<'a> {
+    repositories: &'a [Repository],
     filter: FilterComponent,
     state: ListState,
     focus: Focus,
@@ -23,10 +23,10 @@ pub struct WorktreesComponent {
     pub selected_index: Option<usize>,
 }
 
-impl WorktreesComponent {
-    pub fn new(worktrees: Vec<Worktree>) -> Self {
+impl<'a> WorktreesComponent<'a> {
+    pub fn new(repositories: &'a [Repository]) -> WorktreesComponent<'a> {
         Self {
-            worktrees,
+            repositories,
             filter: FilterComponent::default(),
             state: ListState::default().with_selected(Some(0)),
             focus: Focus::Filter,
@@ -105,11 +105,15 @@ impl From<&Worktree> for ListItem<'_> {
     }
 }
 
-impl ListComponent<Worktree> for WorktreesComponent {
+impl ListComponent<Worktree> for WorktreesComponent<'_> {
     fn filtered_items(&mut self) -> Vec<&Worktree> {
-        self.worktrees
+        self.repositories
             .iter()
-            .filter(|worktree| worktree.path().contains(self.filter.value.as_str()))
+            .flat_map(|r| {
+                r.worktrees
+                    .iter()
+                    .filter(|worktree| worktree.path().contains(self.filter.value.as_str()))
+            })
             .collect()
     }
 
