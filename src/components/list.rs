@@ -43,7 +43,6 @@ pub trait ListComponent<T> {
         }
 
         if let Some(selected_index) = self.get_state().selected() {
-            debug!("Updating selected index to {}", selected_index);
             self.update_selected_index(selected_index);
         }
     }

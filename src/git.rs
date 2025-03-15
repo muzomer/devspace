@@ -24,16 +24,19 @@ impl Clone for Repository {
 
 impl Repository {
     pub fn new_worktree(&self, worktree_name: &str, worktrees_dir: &str) -> Option<Worktree> {
-        let worktree_path = PathBuf::from(worktrees_dir)
-            .join(self.name())
-            .join(worktree_name);
+        let repo_worktrees_dir = PathBuf::from(worktrees_dir).join(self.name());
+        let new_worktree_dir = PathBuf::from(&repo_worktrees_dir).join(worktree_name);
 
-        debug!("Path: {:#?}", worktree_path);
+        // Create the directory to store the worktrees of the selected repository
+        let _ = fs::create_dir_all(&repo_worktrees_dir);
 
-        let _ = fs::create_dir_all(&worktree_path);
-        let result = self
-            .git_repo
-            .worktree(worktree_name, Path::new(&worktree_path), None);
+        let mut create_worktree_options = WorktreeAddOptions::new();
+        create_worktree_options.checkout_existing(true);
+        let result = self.git_repo.worktree(
+            worktree_name,
+            new_worktree_dir.as_path(),
+            Some(&create_worktree_options),
+        );
 
         match result {
             Ok(created_worktree) => Some(Worktree {
@@ -49,14 +52,10 @@ impl Repository {
         }
     }
 
-    fn new_branch(&self, name: &str) -> git2::Reference<'_> {
-        let current_head = self.git_repo.head().unwrap();
-        let created_branch = self
-            .git_repo
-            .branch(name, &current_head.peel_to_commit().unwrap(), false)
-            .unwrap();
-        debug!("Is the new branch head: {}", created_branch.is_head());
-        created_branch.into_reference()
+    fn cleanup(&self) {
+        // TODO: remove the worktree directory if exists
+        // TODO: remove the branch if exists
+        // TODO: remove the worktree from the repo/.git/worktree directory
     }
 
     pub fn path(&self) -> &str {

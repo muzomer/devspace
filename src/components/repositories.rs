@@ -99,7 +99,6 @@ impl RepositoriesComponent {
             Some(index) => {
                 let filtered_repositories = self.filtered_items();
                 let selected_repository = filtered_repositories.get(index).unwrap();
-                debug!("selected repository {}", selected_repository.path());
                 Some(selected_repository)
             }
             None => None,
