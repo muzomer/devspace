@@ -77,6 +77,7 @@ impl App {
                 } else if (key.modifiers == KeyModifiers::CONTROL && key.code == KeyCode::Char('d'))
                     || (key.code == KeyCode::Enter)
                 {
+                    self.create_worktree = CreateWorktreeComponent::new();
                     self.focus = Focus::CreateWorktree;
                     EventState::Consumed
                 } else {

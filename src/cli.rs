@@ -6,18 +6,18 @@ pub struct Args {
     /// Directory where the new git worktrees will be stored
     #[arg(
         short = 'd',
-        long = "git-worktrees-dir",
+        long = "worktrees-dir",
         value_name = "DIR",
-        env = "DEVSPACE_GIT_WORKTREES_DIR"
+        env = "DEVSPACE_WORKTREES_DIR"
     )]
     // TODO: list worktrees from the repositories directly instead of getting the worktrees_dir from user
     pub worktrees_dir: String,
     /// Directory of the git respositories
     #[arg(
         short = 'r',
-        long = "git-repos-dir",
+        long = "repos-dir",
         value_name = "DIR",
-        env = "DEVSPACE_GIT_REPOS_DIR"
+        env = "DEVSPACE_REPOS_DIR"
     )]
     pub repos_dir: String,
 }

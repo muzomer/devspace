@@ -97,8 +97,10 @@ impl RepositoriesComponent {
         match self.selected_index {
             Some(index) => {
                 let filtered_repositories = self.filtered_items();
-                let selected_repository = filtered_repositories.get(index).unwrap();
-                Some(selected_repository)
+                match filtered_repositories.get(index) {
+                    Some(selected_repository) => Some(selected_repository),
+                    None => None,
+                }
             }
             None => None,
         }

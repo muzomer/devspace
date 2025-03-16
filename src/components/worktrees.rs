@@ -27,7 +27,6 @@ pub struct WorktreesComponent {
 impl WorktreesComponent {
     pub fn new(worktrees: Vec<Worktree>) -> WorktreesComponent {
         let selected_index = if worktrees.is_empty() { None } else { Some(0) };
-        debug!("selected_index: {:#?}", selected_index);
         Self {
             filter: FilterComponent::default(),
             state: ListState::default().with_selected(selected_index),
@@ -115,7 +114,10 @@ impl WorktreesComponent {
 
     pub fn selected_worktree(&mut self) -> Option<&Worktree> {
         match self.selected_index {
-            Some(index) => Some(self.filtered_items().get(index).unwrap()),
+            Some(index) => match self.filtered_items().get(index) {
+                Some(worktree) => Some(worktree),
+                None => None,
+            },
             None => None,
         }
     }

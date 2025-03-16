@@ -1,0 +1,38 @@
+version: '3'
+
+tasks:
+  build-demo-image:
+    desc: "Build the demos image"
+    cmds:
+      - docker build -f demos/Dockerfile --no-cache . -t devspace-demo:latest
+
+  shell-demo-image:
+    desc: "Open shell in the demos container"
+    cmds:
+      - docker run -v .:/devspace --entrypoint bash -it devspace-demo:latest
+
+  generate-gif:
+      desc: "Run vhs on tape file to generate gif. Pass the path for the .tape file"
+      cmds:
+        - docker run -v .:/devspace -w /devspace/demos/ -it devspace-demo:latest {{.CLI_ARGS}}
+
+  setup-demo-env:
+    desc: "Setup the demo directories"
+    cmd: |-
+      pushd /var/tmp/demo
+      rm -rvf  repositories_dir worktrees_dir
+
+      for demo_repo in backend-repo frontend-repo infra-repo
+      do
+        mkdir repositories_dir worktrees_dir
+        git init repositories_dir/$demo_repo
+        pushd repositories_dir/$demo_repo
+        git commit --allow-empty -m 'initial commit'
+        popd
+      done
+
+  run-demo:
+    desc: "Command to start recording shell in demos directory"
+    cmd: |-
+      pushd /var/tmp/demo
+      asciinema rec --idle-time-limit 1 --command "bash" {{.CLI_ARGS}}
