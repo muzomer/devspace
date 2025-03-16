@@ -7,33 +7,17 @@ use std::{
 };
 use tracing::error;
 
-pub struct Worktree {
-    pub git_worktree: git2::Worktree,
-}
-
+pub struct Worktree(git2::Worktree);
 impl Worktree {
-    pub fn from_git_worktree(git_worktree: git2::Worktree) -> Self {
-        Self { git_worktree }
-    }
-
     pub fn path(&self) -> &str {
-        self.git_worktree.path().to_str().unwrap()
+        self.0.path().to_str().unwrap()
     }
 }
 
-pub struct Repository {
-    pub git_repo: git2::Repository,
-    pub worktrees: Vec<Worktree>,
-}
-
+pub struct Repository(git2::Repository);
 impl Repository {
     pub fn from_path(path: &str) -> Result<Self, git2::Error> {
-        let repo = git2::Repository::open(path)?;
-        let worktress = list_worktrees(&repo);
-        Ok(Self {
-            git_repo: repo,
-            worktrees: worktress,
-        })
+        Ok(Self(git2::Repository::open(path)?))
     }
     pub fn create_new_worktree(
         &self,
@@ -48,16 +32,14 @@ impl Repository {
 
         let mut create_worktree_options = WorktreeAddOptions::new();
         create_worktree_options.checkout_existing(true);
-        let result = self.git_repo.worktree(
+        let result = self.0.worktree(
             worktree_name,
             new_worktree_dir.as_path(),
             Some(&create_worktree_options),
         );
 
         match result {
-            Ok(created_worktree) => Some(Worktree {
-                git_worktree: created_worktree,
-            }),
+            Ok(created_worktree) => Some(Worktree(created_worktree)),
             Err(error) => {
                 panic!(
                     "Could not create the worktree {}. Error: {}",
@@ -75,32 +57,32 @@ impl Repository {
     // }
 
     pub fn name(&self) -> String {
-        let path = String::from(self.git_repo.path().to_str().unwrap());
+        let path = String::from(self.0.path().to_str().unwrap());
         path.replace("/.git/", "")
             .split("/")
             .last()
             .unwrap()
             .to_string()
     }
-}
 
-fn list_worktrees(git_repo: &git2::Repository) -> Vec<Worktree> {
-    let mut git_worktrees: Vec<Worktree> = Vec::new();
-    match git_repo.worktrees() {
-        Ok(worktrees_arr) => {
-            worktrees_arr.iter().for_each(|worktree| {
-                if let Some(worktree_name) = worktree {
-                    if let Ok(git_worktree) = git_repo.find_worktree(worktree_name) {
-                        git_worktrees.push(Worktree::from_git_worktree(git_worktree));
+    pub fn worktrees(&self) -> Vec<Worktree> {
+        let mut git_worktrees: Vec<Worktree> = Vec::new();
+        match self.0.worktrees() {
+            Ok(worktrees_arr) => {
+                worktrees_arr.iter().for_each(|worktree| {
+                    if let Some(worktree_name) = worktree {
+                        if let Ok(git_worktree) = self.0.find_worktree(worktree_name) {
+                            git_worktrees.push(Worktree(git_worktree));
+                        }
                     }
-                }
-            });
-        }
-        Err(error) => {
-            error!("Could not list the worktrees for repository {}", error);
-        }
-    };
-    git_worktrees
+                });
+            }
+            Err(error) => {
+                error!("Could not list the worktrees for repository {}", error);
+            }
+        };
+        git_worktrees
+    }
 }
 
 pub fn list_repositories(path: &str) -> Vec<Repository> {

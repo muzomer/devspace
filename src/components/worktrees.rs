@@ -6,7 +6,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::git::{Repository, Worktree};
+use crate::git::Worktree;
 
 use super::{filter::FilterComponent, EventState};
 use super::{
@@ -14,8 +14,8 @@ use super::{
     SELECTED_STYLE,
 };
 
-pub struct WorktreesComponent<'a> {
-    repositories: &'a [Repository],
+pub struct WorktreesComponent {
+    pub worktrees: Vec<Worktree>,
     filter: FilterComponent,
     state: ListState,
     focus: Focus,
@@ -23,10 +23,10 @@ pub struct WorktreesComponent<'a> {
     pub selected_index: Option<usize>,
 }
 
-impl<'a> WorktreesComponent<'a> {
-    pub fn new(repositories: &'a [Repository]) -> WorktreesComponent<'a> {
+impl WorktreesComponent {
+    pub fn new(worktrees: Vec<Worktree>) -> WorktreesComponent {
         Self {
-            repositories,
+            worktrees,
             filter: FilterComponent::default(),
             state: ListState::default().with_selected(Some(0)),
             focus: Focus::Filter,
@@ -90,12 +90,16 @@ impl<'a> WorktreesComponent<'a> {
         }
     }
 
-    // pub fn selected_worktree(&self) -> Option<&Worktree> {
-    //     match self.selected_index {
-    //         Some(index) => Some(&self.worktrees[index]),
-    //         None => None,
-    //     }
-    // }
+    pub fn add(&mut self, new_worktree: Worktree) {
+        let new_worktree_path = new_worktree.path().to_string();
+        self.worktrees.push(new_worktree);
+        let new_worktree_index = self
+            .filtered_items()
+            .iter()
+            .position(|wt| wt.path().to_string().eq(&new_worktree_path));
+
+        self.state.select(new_worktree_index);
+    }
 }
 
 impl From<&Worktree> for ListItem<'_> {
@@ -105,16 +109,16 @@ impl From<&Worktree> for ListItem<'_> {
     }
 }
 
-impl ListComponent<Worktree> for WorktreesComponent<'_> {
+impl ListComponent<Worktree> for WorktreesComponent {
     fn filtered_items(&mut self) -> Vec<&Worktree> {
-        self.repositories
+        let mut filtered_worktrees = self
+            .worktrees
             .iter()
-            .flat_map(|r| {
-                r.worktrees
-                    .iter()
-                    .filter(|worktree| worktree.path().contains(self.filter.value.as_str()))
-            })
-            .collect()
+            .filter(|worktree| worktree.path().contains(self.filter.value.as_str()))
+            .collect::<Vec<&Worktree>>();
+
+        filtered_worktrees.sort_by(|w1, w2| w1.path().cmp(w2.path()));
+        filtered_worktrees
     }
 
     fn get_state(&mut self) -> &mut ListState {

@@ -1,5 +1,5 @@
 use super::list::ItemOrder;
-use crate::git::Repository;
+use crate::git::{Repository, Worktree};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
@@ -14,16 +14,16 @@ use super::{
     EventState, SELECTED_STYLE,
 };
 
-pub struct RepositoriesComponent<'a> {
-    repositories: &'a [Repository],
+pub struct RepositoriesComponent {
+    repositories: Vec<Repository>,
     filter: FilterComponent,
     state: ListState,
     selected_index: Option<usize>,
     focus: Focus,
 }
 
-impl<'a> RepositoriesComponent<'a> {
-    pub fn new(repositories: &'a [Repository]) -> Self {
+impl RepositoriesComponent {
+    pub fn new(repositories: Vec<Repository>) -> Self {
         Self {
             repositories,
             filter: FilterComponent::default(),
@@ -103,6 +103,13 @@ impl<'a> RepositoriesComponent<'a> {
             None => None,
         }
     }
+
+    pub fn worktrees(&self) -> Vec<Worktree> {
+        self.repositories
+            .iter()
+            .flat_map(|repository| repository.worktrees())
+            .collect()
+    }
 }
 
 impl From<&Repository> for ListItem<'_> {
@@ -111,12 +118,20 @@ impl From<&Repository> for ListItem<'_> {
     }
 }
 
-impl ListComponent<Repository> for RepositoriesComponent<'_> {
+impl ListComponent<Repository> for RepositoriesComponent {
     fn filtered_items(&mut self) -> Vec<&Repository> {
-        self.repositories
+        let mut filtered_repositories = self
+            .repositories
             .iter()
             .filter(|repository| repository.name().contains(self.filter.value.as_str()))
-            .collect()
+            .collect::<Vec<&Repository>>();
+
+        filtered_repositories.sort_by(|r1, r2| {
+            let r2_name = r2.name();
+            r1.name().cmp(&r2_name)
+        });
+
+        filtered_repositories
     }
 
     fn get_state(&mut self) -> &mut ListState {

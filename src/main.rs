@@ -20,9 +20,7 @@ use ratatui::{
 
 fn main() -> Result<(), Box<dyn Error>> {
     logs::initialize_logging()?;
-    let args = cli::Args::new();
-    let repositories = git::list_repositories(&args.repos_dir);
-    let mut app = app::App::new(&repositories, &args);
+    let mut app = app::App::new();
     let mut terminal = setup_terminal()?;
     let _ = run_app(&mut terminal, &mut app);
     let _ = restore_terminal(&mut terminal);

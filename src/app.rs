@@ -7,7 +7,7 @@ use ratatui::{
 use crate::{
     cli::Args,
     components::{CreateWorktreeComponent, EventState, RepositoriesComponent, WorktreesComponent},
-    git::Repository,
+    git,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -17,19 +17,22 @@ pub enum Focus {
     CreateWorktree,
 }
 
-pub struct App<'a> {
-    worktrees: WorktreesComponent<'a>,
-    repositories: RepositoriesComponent<'a>,
+pub struct App {
+    worktrees: WorktreesComponent,
+    repositories: RepositoriesComponent,
     create_worktree: CreateWorktreeComponent,
-    args: &'a Args,
+    args: Args,
     focus: Focus,
 }
 
-impl<'a> App<'a> {
-    pub fn new(repositories: &'a [Repository], args: &'a Args) -> App<'a> {
+impl App {
+    pub fn new() -> App {
+        let args = Args::new();
+        let repositories = RepositoriesComponent::new(git::list_repositories(&args.repos_dir));
+        let worktrees = WorktreesComponent::new(repositories.worktrees());
         Self {
-            worktrees: WorktreesComponent::new(repositories),
-            repositories: RepositoriesComponent::new(repositories),
+            worktrees,
+            repositories,
             create_worktree: CreateWorktreeComponent::new(),
             focus: Focus::Worktrees,
             args,
@@ -86,8 +89,17 @@ impl<'a> App<'a> {
                 if result == EventState::Consumed {
                     result
                 } else {
-                    if key.code == KeyCode::Enter {
-                        self.create_new_worktree()
+                    if key.code == KeyCode::Enter
+                        && !self.create_worktree.new_worktree_name.is_empty()
+                    {
+                        if let Some(selected_repository) = self.repositories.selected_repository() {
+                            if let Some(created_worktree) = selected_repository.create_new_worktree(
+                                &self.create_worktree.new_worktree_name,
+                                &self.args.worktrees_dir,
+                            ) {
+                                self.worktrees.add(created_worktree);
+                            }
+                        }
                     }
                     self.focus = Focus::Worktrees;
                     EventState::Consumed
@@ -103,26 +115,4 @@ impl<'a> App<'a> {
         let [area] = horizontal.areas(area);
         area
     }
-
-    fn create_new_worktree(&mut self) {
-        if !self.create_worktree.new_worktree_name.is_empty() {
-            if let Some(selected_repository) = self.repositories.selected_repository() {
-                selected_repository.create_new_worktree(
-                    &self.create_worktree.new_worktree_name,
-                    &self.args.worktrees_dir,
-                );
-            }
-        }
-    }
-
-    // pub fn go_to_worktree(&mut self) {
-    //     if let Some(selected_index) = self.worktrees.state.selected() {
-    //         let selected_space = &self.worktrees.items[selected_index];
-    //         self.selected_space = selected_space.clone();
-    //     }
-    // }
-
-    // pub fn print_worktree_dir(&self) {
-    //     println!("{}", self.selected_space);
-    // }
 }
