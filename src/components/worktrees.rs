@@ -1,3 +1,4 @@
+use arboard::Clipboard;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
@@ -5,6 +6,7 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, ListState, StatefulWidget},
     Frame,
 };
+use tracing::{debug, error};
 
 use crate::git::Worktree;
 
@@ -15,22 +17,23 @@ use super::{
 };
 
 pub struct WorktreesComponent {
-    pub worktrees: Vec<Worktree>,
+    worktrees: Vec<Worktree>,
     filter: FilterComponent,
     state: ListState,
     focus: Focus,
-
-    pub selected_index: Option<usize>,
+    selected_index: Option<usize>,
 }
 
 impl WorktreesComponent {
     pub fn new(worktrees: Vec<Worktree>) -> WorktreesComponent {
+        let selected_index = if worktrees.is_empty() { None } else { Some(0) };
+        debug!("selected_index: {:#?}", selected_index);
         Self {
-            worktrees,
             filter: FilterComponent::default(),
-            state: ListState::default().with_selected(Some(0)),
+            state: ListState::default().with_selected(selected_index),
             focus: Focus::Filter,
-            selected_index: None,
+            selected_index,
+            worktrees,
         }
     }
 
@@ -70,6 +73,10 @@ impl WorktreesComponent {
                     } else {
                         match key.code {
                             KeyCode::Tab => self.focus = Focus::List,
+                            KeyCode::Enter => {
+                                self.copy_path_of_selected_worktree();
+                                return EventState::NotConsumed;
+                            }
                             _ => return EventState::NotConsumed,
                         }
                     }
@@ -83,6 +90,10 @@ impl WorktreesComponent {
                     KeyCode::Char('g') | KeyCode::Home => self.select(ItemOrder::First),
                     KeyCode::Char('G') | KeyCode::End => self.select(ItemOrder::Last),
                     KeyCode::Tab => self.focus = Focus::Filter,
+                    KeyCode::Enter => {
+                        self.copy_path_of_selected_worktree();
+                        return EventState::NotConsumed;
+                    }
                     _ => return EventState::NotConsumed,
                 }
                 EventState::Consumed
@@ -99,6 +110,35 @@ impl WorktreesComponent {
             .position(|wt| wt.path().to_string().eq(&new_worktree_path));
 
         self.state.select(new_worktree_index);
+        self.selected_index = new_worktree_index;
+    }
+
+    pub fn selected_worktree(&mut self) -> Option<&Worktree> {
+        match self.selected_index {
+            Some(index) => Some(self.filtered_items().get(index).unwrap()),
+            None => None,
+        }
+    }
+
+    fn copy_path_of_selected_worktree(&mut self) {
+        match Clipboard::new() {
+            Ok(mut clipboard) => match self.selected_worktree() {
+                Some(selected_worktree) => {
+                    match clipboard.set_text(selected_worktree.path().to_string()) {
+                        Ok(_) => {
+                            debug!("Copied the path {} to clipboard", selected_worktree.path())
+                        }
+                        Err(error) => error!(
+                            "Could not copy the path {} to clipboard. Error: {}",
+                            selected_worktree.path(),
+                            error
+                        ),
+                    }
+                }
+                None => debug!("No worktree was selected. Nothing to copy to clipboard"),
+            },
+            Err(error) => error!("Could access the clipboard. Error: {}", error),
+        }
     }
 }
 
