@@ -1,6 +1,6 @@
 [package]
 name = "devspace"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Muzaffar Omer <muzaffar.omer@gmail.com>"]
 description = "Tool to create and manage development workspaces"
@@ -11,7 +11,19 @@ keywords = ["git", "worktree", "workspace"]
 categories = ["command-line-utilities"]
 
 [dependencies]
+arboard = "3.4.1"
+clap = { version = "4.5.29", features = ["derive", "env"] }
+color-eyre = "0.6.3"
+crossterm = "0.28.1"
+directories = "6.0.0"
+git2 = "0.20.0"
+lazy_static = "1.5.0"
+ratatui = "0.29.0"
+tracing = "0.1.41"
+tracing-error = "0.2.1"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 
 [dev-dependencies]
 assert_cmd = "2.0.13"
 pretty_assertions = "1.4.0"
+tempfile = "3.17.1"
