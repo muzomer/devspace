@@ -20,19 +20,20 @@ tasks:
     desc: "Setup the demo directories"
     cmd: |-
       pushd /var/tmp/demo
-      rm -rvf  repositories_dir worktrees_dir
+      rm -rvf *
 
       for demo_repo in backend-repo frontend-repo infra-repo
       do
-        mkdir repositories_dir worktrees_dir
-        git init repositories_dir/$demo_repo
+        git init repositories_dir/$demo_repo --initial-branch main
         pushd repositories_dir/$demo_repo
         git commit --allow-empty -m 'initial commit'
         popd
       done
+      mkdir worktrees_dir
 
   run-demo:
-    desc: "Command to start recording shell in demos directory"
-    cmd: |-
-      pushd /var/tmp/demo
-      asciinema rec --idle-time-limit 1 --command "bash" {{.CLI_ARGS}}
+    desc: "Command to execute demo from the demos directory"
+    dir: ./demos/
+    deps:
+      - setup-demo-env
+    cmd: vhs {{.CLI_ARGS}}
