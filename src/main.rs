@@ -1,17 +1,9 @@
-mod app;
-mod cli;
-mod components;
-mod dirs;
-mod git;
-mod logs;
-
+use devspace::{app, logs, run_app};
 use std::{error::Error, io};
 
-use components::EventState;
 use ratatui::{
-    backend::{Backend, CrosstermBackend},
+    backend::CrosstermBackend,
     crossterm::{
-        event::{self, Event},
         execute,
         terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     },
@@ -39,16 +31,4 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<io::Stderr>>) -> io
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen,)?;
     terminal.show_cursor()
-}
-
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut app::App) -> io::Result<bool> {
-    loop {
-        terminal.draw(|f| app.draw(f))?;
-
-        if let Event::Key(key) = event::read()? {
-            if app.handle_key(key) == EventState::NotConsumed {
-                break Ok(false);
-            }
-        };
-    }
 }
