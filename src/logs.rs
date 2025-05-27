@@ -1,9 +1,9 @@
-use crate::dirs;
-
 use color_eyre::eyre::Result;
 use lazy_static::lazy_static;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{self, layer::SubscriberExt, util::SubscriberInitExt, Layer};
+
+use crate::dirs;
 
 lazy_static! {
     pub static ref PROJECT_NAME: String = env!("CARGO_CRATE_NAME").to_uppercase().to_string();
