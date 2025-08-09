@@ -1,17 +1,77 @@
-name: GitHub Actions Demo
-on: [push]
+name: build and test
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*.*.*"
+
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build_and_test:
+    name: build and test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+
       - name: Build
-        run: cargo build --verbose
-  test:
+        run: cargo build --verbose --release
+
+      - name: Test
+        run: cargo test --verbose --release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: devspace-${{ matrix.os }}
+          path: |
+            target/release/devspace
+            target/release/devspace.exe
+
+  release:
+    name: release
+    needs: build_and_test
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
-      - name: Run tests
-        run: cargo test --verbose
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload release assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: |
+            artifacts/devspace-ubuntu-latest/devspace
+            artifacts/devspace-macos-latest/devspace
+            artifacts/devspace-windows-latest/devspace.exe
+          asset_name: |
+            devspace-ubuntu-latest
+            devspace-macos-latest
+            devspace-windows-latest.exe
+          asset_content_type: application/octet-stream
