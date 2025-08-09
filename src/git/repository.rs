@@ -2,38 +2,9 @@ use git2::WorktreeAddOptions;
 use std::{
     ffi::OsStr,
     fs::{self, read_dir},
-    io,
     path::{Path, PathBuf},
 };
 use tracing::{debug, error};
-
-pub struct Worktree(git2::Worktree);
-impl Worktree {
-    pub fn path(&self) -> &str {
-        self.0.path().to_str().unwrap()
-    }
-
-    pub fn name(&self) -> &str {
-        self.0.name().unwrap()
-    }
-}
-
-impl Clone for Worktree {
-    fn clone(&self) -> Self {
-        let repo = git2::Repository::discover(self.path()).unwrap();
-        let worktree = repo.find_worktree(self.name()).unwrap();
-        Self(worktree)
-    }
-}
-
-pub fn delete_worktree(worktree: &Worktree) -> io::Result<()> {
-    let worktree_path = Path::new(worktree.path());
-    if worktree_path.exists() {
-        fs::remove_dir_all(worktree_path)?;
-    }
-    worktree.0.prune(None).unwrap();
-    Ok(())
-}
 
 pub struct Repository(git2::Repository);
 impl Repository {
@@ -44,7 +15,7 @@ impl Repository {
         &self,
         worktree_name: &str,
         worktrees_dir: &str,
-    ) -> Option<Worktree> {
+    ) -> Option<super::Worktree> {
         let repo_worktrees_dir = PathBuf::from(worktrees_dir).join(self.name());
         let new_worktree_dir = PathBuf::from(&repo_worktrees_dir).join(worktree_name);
 
@@ -59,7 +30,9 @@ impl Repository {
         );
 
         match result {
-            Ok(created_worktree) => Some(Worktree(created_worktree)),
+            Ok(created_worktree) => Some(super::Worktree {
+                git_worktree: created_worktree,
+            }),
             Err(error) => {
                 panic!(
                     "Could not create the worktree {}. Error: {}",
@@ -78,14 +51,14 @@ impl Repository {
             .to_string()
     }
 
-    pub fn worktrees(&self) -> Vec<Worktree> {
-        let mut git_worktrees: Vec<Worktree> = Vec::new();
+    pub fn worktrees(&self) -> Vec<super::Worktree> {
+        let mut git_worktrees: Vec<super::Worktree> = Vec::new();
         match self.0.worktrees() {
             Ok(worktrees_arr) => {
                 worktrees_arr.iter().for_each(|worktree| {
                     if let Some(worktree_name) = worktree {
                         if let Ok(git_worktree) = self.0.find_worktree(worktree_name) {
-                            git_worktrees.push(Worktree(git_worktree));
+                            git_worktrees.push(super::Worktree { git_worktree });
                         }
                     }
                 });
