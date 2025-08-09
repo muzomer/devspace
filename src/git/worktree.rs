@@ -25,13 +25,17 @@ impl Worktree {
 
 pub fn delete_worktree(worktree: &Worktree) {
     let worktree_path = Path::new(worktree.path());
+    if let Err(e) = worktree.git_worktree.prune(None) {
+        debug!("Failed to prune worktree '{}': {}", worktree.name(), e);
+    }
+
     if worktree_path.exists() {
-        let _ = fs::remove_dir_all(worktree_path)
-            .inspect_err(|_| debug!("Could not delete the worktree {}", worktree.name()));
-    } else {
-        debug!(
-            "Skipping deletion of worktree {} does not exist in the filesystem",
-            worktree.name()
-        );
+        if let Err(e) = fs::remove_dir_all(worktree_path) {
+            debug!(
+                "Failed to remove worktree directory for '{}': {}",
+                worktree.name(),
+                e
+            );
+        }
     }
 }
