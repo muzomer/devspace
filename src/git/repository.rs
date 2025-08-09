@@ -30,10 +30,16 @@ impl Repository {
         );
 
         match result {
-            Ok(created_worktree) => Some(super::Worktree {
-                git_worktree: created_worktree,
-                has_remote_branch: false,
-            }),
+            Ok(created_worktree) => {
+                let branch = self
+                    .0
+                    .find_branch(worktree_name, git2::BranchType::Local)
+                    .unwrap();
+                Some(super::Worktree {
+                    git_worktree: created_worktree,
+                    has_remote_branch: branch.upstream().is_ok(),
+                })
+            }
             Err(error) => {
                 panic!(
                     "Could not create the worktree {}. Error: {}",
@@ -59,9 +65,16 @@ impl Repository {
                 worktrees_arr.iter().for_each(|worktree| {
                     if let Some(worktree_name) = worktree {
                         if let Ok(git_worktree) = self.0.find_worktree(worktree_name) {
+                            let branch = self.0.find_branch(worktree_name, git2::BranchType::Local);
+
+                            let has_remote_branch = match branch {
+                                Ok(branch) => branch.upstream().is_ok(),
+                                Err(_) => false,
+                            };
+
                             git_worktrees.push(super::Worktree {
                                 git_worktree,
-                                has_remote_branch: false,
+                                has_remote_branch,
                             });
                         }
                     }
