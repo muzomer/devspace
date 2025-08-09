@@ -3,7 +3,8 @@ use arboard::Clipboard;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::{Style, Stylize},
+    style::{Color, Style, Stylize},
+    text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, ListState, StatefulWidget},
     Frame,
 };
@@ -148,13 +149,17 @@ impl WorktreesComponent {
 
 impl From<&git::Worktree> for ListItem<'_> {
     fn from(value: &git::Worktree) -> Self {
-        let remote_indicator = if value.has_remote_branch {
-            "✓"
+        let (remote_indicator, color) = if value.has_remote_branch {
+            ("✓", Color::Green)
         } else {
-            "✗"
+            ("✗", Color::Red)
         };
-        let item_text = format!("{} {}", remote_indicator, value.path());
-        ListItem::new(item_text)
+
+        let indicator_span =
+            Span::styled(format!("{} ", remote_indicator), Style::default().fg(color));
+        let path_span = Span::from(value.path().to_string());
+
+        ListItem::new(Line::from(vec![indicator_span, path_span]))
     }
 }
 
