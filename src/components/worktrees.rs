@@ -3,14 +3,11 @@ use arboard::Clipboard;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::{Color, Style, Stylize},
-    text::{Line, Span},
+    style::{Style, Stylize},
     widgets::{Block, Borders, List, ListItem, ListState, StatefulWidget},
     Frame,
 };
 use tracing::{debug, error};
-
-use crate::git::Worktree;
 
 use super::{filter::FilterComponent, EventState};
 use super::{
@@ -19,7 +16,7 @@ use super::{
 };
 
 pub struct WorktreesComponent {
-    worktrees: Vec<Worktree>,
+    worktrees: Vec<git::Worktree>,
     filter: FilterComponent,
     state: ListState,
     focus: Focus,
@@ -27,7 +24,7 @@ pub struct WorktreesComponent {
 }
 
 impl WorktreesComponent {
-    pub fn new(worktrees: Vec<Worktree>) -> WorktreesComponent {
+    pub fn new(worktrees: Vec<git::Worktree>) -> WorktreesComponent {
         let selected_index = if worktrees.is_empty() { None } else { Some(0) };
         Self {
             filter: FilterComponent::default(),
@@ -59,30 +56,27 @@ impl WorktreesComponent {
             Focus::Filter => {
                 let result = self.filter.handle_key(key);
                 if result == EventState::Consumed {
-                    result
-                } else {
-                    if key.modifiers == KeyModifiers::CONTROL {
-                        match key.code {
-                            KeyCode::Char('n') => {
-                                self.select(ItemOrder::Next);
-                            }
-                            KeyCode::Char('p') => {
-                                self.select(ItemOrder::Previous);
-                            }
-                            _ => return EventState::NotConsumed,
-                        }
-                    } else {
-                        match key.code {
-                            KeyCode::Tab => self.focus = Focus::List,
-                            KeyCode::Enter => {
-                                self.copy_path_of_selected_worktree();
-                                return EventState::NotConsumed;
-                            }
-                            _ => return EventState::NotConsumed,
-                        }
-                    }
-                    EventState::Consumed
+                    return result;
                 }
+
+                match (key.code, key.modifiers) {
+                    (KeyCode::Char('n'), KeyModifiers::CONTROL)
+                    | (KeyCode::Down, KeyModifiers::NONE) => {
+                        self.select(ItemOrder::Next);
+                    }
+                    (KeyCode::Char('p'), KeyModifiers::CONTROL)
+                    | (KeyCode::Up, KeyModifiers::NONE) => {
+                        self.select(ItemOrder::Previous);
+                    }
+                    (KeyCode::Tab, KeyModifiers::NONE) => self.focus = Focus::List,
+                    (KeyCode::Enter, KeyModifiers::NONE) => {
+                        self.copy_path_of_selected_worktree();
+                    }
+
+                    _ => return EventState::NotConsumed,
+                }
+
+                EventState::Consumed
             }
             Focus::List => {
                 match key.code {
@@ -102,7 +96,7 @@ impl WorktreesComponent {
         }
     }
 
-    pub fn add(&mut self, new_worktree: Worktree) {
+    pub fn add(&mut self, new_worktree: git::Worktree) {
         let new_worktree_path = new_worktree.path().to_string();
         self.worktrees.push(new_worktree);
         let new_worktree_index = self
@@ -124,14 +118,11 @@ impl WorktreesComponent {
         }
     }
 
-    pub fn selected_worktree(&mut self) -> Option<Worktree> {
-        match self.selected_index {
-            Some(index) => match self.filtered_items().get(index) {
-                Some(worktree) => Some((*worktree).clone()),
-                None => None,
-            },
-            None => None,
-        }
+    pub fn selected_worktree(&mut self) -> Option<git::Worktree> {
+        let selected_index = self.selected_index?;
+        self.filtered_items()
+            .get(selected_index)
+            .map(|worktree| (*worktree).clone())
     }
 
     fn copy_path_of_selected_worktree(&mut self) {
@@ -156,29 +147,25 @@ impl WorktreesComponent {
     }
 }
 
-impl From<&Worktree> for ListItem<'_> {
-    fn from(value: &Worktree) -> Self {
-        let (remote_indicator, color) = if value.has_remote_branch {
-            ("✓", Color::Green)
+impl From<&git::Worktree> for ListItem<'_> {
+    fn from(value: &git::Worktree) -> Self {
+        let remote_indicator = if value.has_remote_branch {
+            "✓"
         } else {
-            ("✗", Color::Red)
+            "✗"
         };
-
-        let indicator_span =
-            Span::styled(format!("{} ", remote_indicator), Style::default().fg(color));
-        let path_span = Span::from(value.path().to_string());
-
-        ListItem::new(Line::from(vec![indicator_span, path_span]))
+        let item_text = format!("{} {}", remote_indicator, value.path());
+        ListItem::new(item_text)
     }
 }
 
-impl ListComponent<Worktree> for WorktreesComponent {
-    fn filtered_items(&mut self) -> Vec<&Worktree> {
+impl ListComponent<git::Worktree> for WorktreesComponent {
+    fn filtered_items(&mut self) -> Vec<&git::Worktree> {
         let mut filtered_worktrees = self
             .worktrees
             .iter()
             .filter(|worktree| worktree.path().contains(self.filter.value.as_str()))
-            .collect::<Vec<&Worktree>>();
+            .collect::<Vec<&git::Worktree>>();
 
         filtered_worktrees.sort_by(|w1, w2| w1.path().cmp(w2.path()));
         filtered_worktrees

@@ -152,7 +152,8 @@ So far there are no specific rules for contributions. Pull requests are very wel
 
 - [x] Create new worktrees.
 - [x] Delete worktrees.
-- [ ] Show the status of worktrees (e.g. stale, active ...etc.).
+- [x] Show the status of worktrees (e.g. stale, active ...etc.).
+- [ ] Create worktrees from remote branches.
 - [ ] Add metadata to worktrees, e.g. JIRA links, PR links ...etc.
 
 More features might be added in the future.
