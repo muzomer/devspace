@@ -210,45 +210,6 @@ mod tests {
     }
 
     #[test]
-    fn test_get_gitsubdirs() {
-        let temp_dir = tempdir().expect("Could not create temporary directory");
-
-        for path in [
-            "first_git_dir/.git",
-            "second_git_dir/.git",
-            "third_git_dir/subdir/subdir/",
-            "fourth_git_dir/subdir/subdir/.git",
-        ] {
-            fs::DirBuilder::new()
-                .recursive(true)
-                .create(temp_dir.path().join(path))
-                .unwrap_or_else(|_| {
-                    panic!(
-                        "Could not create {} directory inside the temporary dir",
-                        path
-                    )
-                });
-        }
-
-        let git_subdirs = find_git_dirs(temp_dir.path()).unwrap();
-
-        for path in [
-            "first_git_dir/",
-            "second_git_dir",
-            "fourth_git_dir/subdir/subdir",
-        ] {
-            let expected_dir = temp_dir.path().join(path);
-            assert!(
-                git_subdirs
-                    .iter()
-                    .any(|dir| dir.to_path_buf() == expected_dir),
-                "Expected {} to be listed in the git subdirectories, but it was not included",
-                expected_dir.to_str().unwrap()
-            )
-        }
-    }
-
-    #[test]
     fn test_list() {
         let temp_dir = tempdir().expect("Could not create temporary directory");
 
@@ -269,14 +230,6 @@ mod tests {
                 });
         }
 
-        let git_subdirs = list_git_dirs(
-            temp_dir
-                .path()
-                .to_str()
-                .expect("Could not convert temporary path to string"),
-        )
-        .expect("Could not list all git subdirectories");
-
         for path in [
             "first_git_dir",
             "second_git_dir",
@@ -284,7 +237,7 @@ mod tests {
         ] {
             let expected_dir = temp_dir.path().join(path);
             assert!(
-                git_subdirs
+                find_git_dirs(temp_dir.path())
                     .iter()
                     .any(|dir| dir == expected_dir.to_str().unwrap()),
                 "Expected {} to be listed in the git subdirectories, but it was not included",
