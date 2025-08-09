@@ -5,13 +5,34 @@ use std::{
     io,
     path::{Path, PathBuf},
 };
-use tracing::error;
+use tracing::{debug, error};
 
 pub struct Worktree(git2::Worktree);
 impl Worktree {
     pub fn path(&self) -> &str {
         self.0.path().to_str().unwrap()
     }
+
+    pub fn name(&self) -> &str {
+        self.0.name().unwrap()
+    }
+}
+
+impl Clone for Worktree {
+    fn clone(&self) -> Self {
+        let repo = git2::Repository::discover(self.path()).unwrap();
+        let worktree = repo.find_worktree(self.name()).unwrap();
+        Self(worktree)
+    }
+}
+
+pub fn delete_worktree(worktree: &Worktree) -> io::Result<()> {
+    let worktree_path = Path::new(worktree.path());
+    if worktree_path.exists() {
+        fs::remove_dir_all(worktree_path)?;
+    }
+    worktree.0.prune(None).unwrap();
+    Ok(())
 }
 
 pub struct Repository(git2::Repository);
@@ -27,7 +48,6 @@ impl Repository {
         let repo_worktrees_dir = PathBuf::from(worktrees_dir).join(self.name());
         let new_worktree_dir = PathBuf::from(&repo_worktrees_dir).join(worktree_name);
 
-        // Create the directory to store the worktrees of the selected repository
         let _ = fs::create_dir_all(&repo_worktrees_dir);
 
         let mut create_worktree_options = WorktreeAddOptions::new();
@@ -45,16 +65,9 @@ impl Repository {
                     "Could not create the worktree {}. Error: {}",
                     worktree_name, error
                 );
-                // None
             }
         }
     }
-
-    // fn cleanup(&self) {
-    // TODO: remove the worktree directory if exists
-    // TODO: remove the branch if exists
-    // TODO: remove the worktree from the repo/.git/worktree directory
-    // }
 
     pub fn name(&self) -> String {
         let path = String::from(self.0.path().to_str().unwrap());
@@ -86,88 +99,86 @@ impl Repository {
 }
 
 pub fn list_repositories(path: &str) -> Vec<Repository> {
-    match list_git_dirs(path) {
-        Ok(git_dirs) => git_dirs
-            .iter()
-            .filter_map(|dir| match Repository::from_path(dir) {
-                Ok(created_repo) => Some(created_repo),
-                Err(err) => {
-                    error!(
-                        "Could not create repository from path {}. Error: {}",
-                        dir, err
-                    );
-                    None
-                }
-            })
-            .collect(),
-        Err(err) => {
-            error!(
-                "Could not retrieve the git directories for repositories: {}",
-                err
-            );
-            Vec::new()
-        }
-    }
+    debug!("Listing repositories in: {}", path);
+    let repositories: Vec<Repository> = find_git_dirs(Path::new(path))
+        .iter()
+        .filter_map(|dir| match Repository::from_path(dir) {
+            Ok(created_repo) => Some(created_repo),
+            Err(err) => {
+                error!(
+                    "Could not create repository from path {}. Error: {}",
+                    dir, err
+                );
+                None
+            }
+        })
+        .collect();
+
+    repositories
 }
 
-pub fn list_git_dirs(path: &str) -> io::Result<Vec<String>> {
-    let mut git_dirs: Vec<String> = vec![];
-    for entry in get_git_subdirs(Path::new(path))? {
-        if let Some(entry_path) = entry.to_str() {
-            git_dirs.push(entry_path.to_string());
-        }
-    }
-
-    Ok(git_dirs)
-}
-
-pub fn is_git_dir(dir: &Path) -> io::Result<bool> {
+fn is_git_dir(dir: &Path) -> bool {
     if !dir.is_dir() {
-        return Ok(false);
+        return false;
     }
-
-    let entries = read_dir(dir)?;
-    let mut result = false;
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.file_name() == Some(OsStr::new(".git")) {
-            result = true;
-            break;
+    match read_dir(dir) {
+        Ok(entries) => {
+            let mut result = false;
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.file_name() == Some(OsStr::new(".git")) {
+                    result = true;
+                    break;
+                }
+            }
+            result
+        }
+        Err(err) => {
+            error!("Could not read the directory {}: {}", dir.display(), err);
+            return false;
         }
     }
-
-    Ok(result)
 }
 
-pub fn get_git_subdirs(path: &Path) -> io::Result<Vec<PathBuf>> {
-    let mut git_subdirs: Vec<PathBuf> = Vec::new();
+fn find_git_dirs(path: &Path) -> Vec<String> {
+    let mut git_dirs: Vec<String> = vec![];
 
     if !path.is_dir() {
-        return Ok(git_subdirs);
+        return git_dirs;
     }
 
-    if is_git_dir(path)? {
-        git_subdirs.push(path.to_path_buf());
-        return Ok(git_subdirs);
+    if is_git_dir(path) {
+        debug!("Found git repository at: {:?}", path);
+        git_dirs.push(path.to_path_buf().display().to_string());
+        return git_dirs;
     }
 
-    let entries = read_dir(path)?;
-    for entry in entries.flatten() {
-        if !entry.path().is_dir() {
-            continue;
+    return match read_dir(path) {
+        Err(err) => {
+            error!("Could not read the directory {}: {}", path.display(), err);
+            return git_dirs;
         }
+        Ok(entries) => {
+            for entry in entries.flatten() {
+                if !entry.path().is_dir() {
+                    continue;
+                }
 
-        if let Ok(true) = is_git_dir(&entry.path()) {
-            git_subdirs.push(entry.path().to_path_buf());
-        } else {
-            for entry in read_dir(entry.path())?.flatten() {
-                let entry_git_subdirs = get_git_subdirs(&entry.path())?;
-                git_subdirs.extend(entry_git_subdirs);
+                if let true = is_git_dir(&entry.path()) {
+                    debug!("Found git repository at: {:?}", entry.path());
+                    git_dirs.push(entry.path().to_path_buf().display().to_string());
+                } else {
+                    debug!(
+                        "No git repository found at: {:?}, continuing search",
+                        entry.path()
+                    );
+                    let sub_entries = find_git_dirs(&entry.path());
+                    git_dirs.extend(sub_entries);
+                }
             }
+            git_dirs
         }
-    }
-
-    Ok(git_subdirs)
+    };
 }
 
 #[cfg(test)]
@@ -180,8 +191,7 @@ mod tests {
     fn test_not_git_dir() {
         let temp_dir = tempdir().expect("Could not create temporary directory");
         assert!(
-            !is_git_dir(temp_dir.path())
-                .expect("is_git_dir failed to check whether temporary path is git directory"),
+            !is_git_dir(temp_dir.path()),
             "Expected is_git_dir to be false, but it was true"
         );
     }
@@ -194,8 +204,7 @@ mod tests {
             .expect("Could not create .git directory inside the temporary dir");
 
         assert!(
-            is_git_dir(temp_dir.path())
-                .expect("is_git_dir failed to check whether temporary path is git directory"),
+            is_git_dir(temp_dir.path()),
             "Expected is_git_dir to be true, but it was false"
         );
     }
@@ -221,7 +230,7 @@ mod tests {
                 });
         }
 
-        let git_subdirs = get_git_subdirs(temp_dir.path()).unwrap();
+        let git_subdirs = find_git_dirs(temp_dir.path()).unwrap();
 
         for path in [
             "first_git_dir/",

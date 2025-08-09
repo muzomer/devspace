@@ -62,13 +62,20 @@ impl App {
             Focus::Worktrees => {
                 let result = self.worktrees.handle_key(key);
                 if result == EventState::Consumed {
-                    result
-                } else if key.modifiers == KeyModifiers::CONTROL && key.code == KeyCode::Char('d') {
-                    self.focus = Focus::Repositories;
-                    EventState::Consumed
-                } else {
-                    EventState::NotConsumed
+                    return result;
                 }
+
+                if key.modifiers == KeyModifiers::CONTROL && key.code == KeyCode::Char('d') {
+                    self.focus = Focus::Repositories;
+                    return EventState::Consumed;
+                }
+
+                if key.modifiers == KeyModifiers::CONTROL && key.code == KeyCode::Char('x') {
+                    self.worktrees.delete_selected_worktree();
+                    return EventState::Consumed;
+                }
+
+                EventState::NotConsumed
             }
             Focus::Repositories => {
                 let result = self.repositories.handle_key(key);

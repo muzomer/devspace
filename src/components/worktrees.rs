@@ -1,3 +1,4 @@
+use crate::git;
 use arboard::Clipboard;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
@@ -112,10 +113,22 @@ impl WorktreesComponent {
         self.selected_index = new_worktree_index;
     }
 
-    pub fn selected_worktree(&mut self) -> Option<&Worktree> {
+    pub fn delete_selected_worktree(&mut self) {
+        if let Some(selected_worktree) = self.selected_worktree() {
+            if let Err(error) = git::delete_worktree(&selected_worktree) {
+                error!("Could not delete the worktree. Error: {}", error);
+            } else {
+                self.worktrees.retain(|w| !w.path().eq(selected_worktree.path()));
+                self.state.select(None);
+                self.selected_index = None;
+            }
+        }
+    }
+
+    pub fn selected_worktree(&mut self) -> Option<Worktree> {
         match self.selected_index {
             Some(index) => match self.filtered_items().get(index) {
-                Some(worktree) => Some(worktree),
+                Some(worktree) => Some((*worktree).clone()),
                 None => None,
             },
             None => None,
