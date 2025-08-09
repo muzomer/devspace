@@ -58,40 +58,42 @@ impl App {
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) -> EventState {
-        match self.focus {
+        let result = match self.focus {
             Focus::Worktrees => {
                 let result = self.worktrees.handle_key(key);
-                if result == EventState::Consumed {
-                    return result;
+                if result == EventState::Consumed || result == EventState::Exit {
+                    result
+                } else {
+                    match (key.code, key.modifiers) {
+                        (KeyCode::Char('d'), KeyModifiers::CONTROL) => {
+                            self.focus = Focus::Repositories;
+                            EventState::Consumed
+                        }
+                        (KeyCode::Char('x'), KeyModifiers::CONTROL) => {
+                            self.worktrees.delete_selected_worktree();
+                            EventState::Consumed
+                        }
+                        _ => EventState::NotConsumed,
+                    }
                 }
-
-                if key.modifiers == KeyModifiers::CONTROL && key.code == KeyCode::Char('d') {
-                    self.focus = Focus::Repositories;
-                    return EventState::Consumed;
-                }
-
-                if key.modifiers == KeyModifiers::CONTROL && key.code == KeyCode::Char('x') {
-                    self.worktrees.delete_selected_worktree();
-                    return EventState::Consumed;
-                }
-
-                EventState::NotConsumed
             }
             Focus::Repositories => {
                 let result = self.repositories.handle_key(key);
                 if result == EventState::Consumed {
                     result
-                } else if (key.modifiers == KeyModifiers::CONTROL && key.code == KeyCode::Char('d'))
-                    || (key.code == KeyCode::Enter)
-                {
-                    self.create_worktree = CreateWorktreeComponent::new();
-                    self.focus = Focus::CreateWorktree;
-                    EventState::Consumed
                 } else {
-                    self.focus = Focus::Worktrees;
+                    match (key.code, key.modifiers) {
+                        (KeyCode::Char('d'), KeyModifiers::CONTROL)
+                        | (KeyCode::Enter, KeyModifiers::NONE) => {
+                            self.create_worktree = CreateWorktreeComponent::new();
+                            self.focus = Focus::CreateWorktree;
+                        }
+                        _ => self.focus = Focus::Worktrees,
+                    };
                     EventState::Consumed
                 }
             }
+
             Focus::CreateWorktree => {
                 let result = self.create_worktree.handle_key(key);
                 if result == EventState::Consumed {
@@ -113,7 +115,19 @@ impl App {
                     EventState::Consumed
                 }
             }
+        };
+
+        if result == EventState::NotConsumed {
+            return match (key.code, key.modifiers) {
+                (KeyCode::Char('c'), KeyModifiers::CONTROL)
+                | (KeyCode::Char('q'), KeyModifiers::CONTROL)
+                | (KeyCode::Char('w'), KeyModifiers::CONTROL)
+                | (KeyCode::Esc, KeyModifiers::NONE) => EventState::Exit,
+                _ => result,
+            };
         }
+
+        result
     }
 
     fn popup_area(&self, area: Rect, percent_x: u16, percent_y: u16) -> Rect {

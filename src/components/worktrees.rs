@@ -64,20 +64,27 @@ impl WorktreesComponent {
                     (KeyCode::Char('n'), KeyModifiers::CONTROL)
                     | (KeyCode::Down, KeyModifiers::NONE) => {
                         self.select(ItemOrder::Next);
+                        EventState::Consumed
                     }
                     (KeyCode::Char('p'), KeyModifiers::CONTROL)
                     | (KeyCode::Up, KeyModifiers::NONE) => {
                         self.select(ItemOrder::Previous);
+                        EventState::Consumed
                     }
-                    (KeyCode::Tab, KeyModifiers::NONE) => self.focus = Focus::List,
+                    (KeyCode::Tab, KeyModifiers::NONE) => {
+                        self.focus = Focus::List;
+                        EventState::Consumed
+                    }
                     (KeyCode::Enter, KeyModifiers::NONE) => {
-                        self.copy_path_of_selected_worktree();
+                        if self.copy_path_of_selected_worktree() {
+                            debug!("copied path of selected worktree");
+                            return EventState::Exit;
+                        }
+                        EventState::Consumed
                     }
 
                     _ => return EventState::NotConsumed,
                 }
-
-                EventState::Consumed
             }
             Focus::List => {
                 match key.code {
@@ -87,8 +94,9 @@ impl WorktreesComponent {
                     KeyCode::Char('G') | KeyCode::End => self.select(ItemOrder::Last),
                     KeyCode::Tab => self.focus = Focus::Filter,
                     KeyCode::Enter => {
-                        self.copy_path_of_selected_worktree();
-                        return EventState::NotConsumed;
+                        if self.copy_path_of_selected_worktree() {
+                            return EventState::Exit;
+                        }
                     }
                     _ => return EventState::NotConsumed,
                 }
@@ -128,22 +136,21 @@ impl WorktreesComponent {
         })
     }
 
-    fn copy_path_of_selected_worktree(&mut self) {
-        match Clipboard::new() {
-            Ok(mut clipboard) => match self.selected_worktree_path() {
-                Some(path) => match clipboard.set_text(path.clone()) {
-                    Ok(_) => {
-                        debug!("Copied the path {} to clipboard", path)
-                    }
-                    Err(error) => error!(
-                        "Could not copy the path {} to clipboard. Error: {}",
-                        path, error
-                    ),
-                },
-                None => debug!("No worktree was selected. Nothing to copy to clipboard"),
-            },
-            Err(error) => error!("Could access the clipboard. Error: {}", error),
+    fn copy_path_of_selected_worktree(&mut self) -> bool {
+        if let Ok(mut clipboard) = Clipboard::new() {
+            if let Some(path) = self.selected_worktree_path() {
+                if clipboard.set_text(path.clone()).is_ok() {
+                    debug!("Copied the path {} to clipboard", path);
+                    return true;
+                }
+                error!("Could not copy the path {} to clipboard.", path);
+            } else {
+                debug!("No worktree was selected. Nothing to copy to clipboard");
+            }
+        } else {
+            error!("Could not access the clipboard.");
         }
+        false
     }
 }
 
