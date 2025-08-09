@@ -109,37 +109,36 @@ impl WorktreesComponent {
     }
 
     pub fn delete_selected_worktree(&mut self) {
-        if let Some(selected_worktree) = self.selected_worktree() {
-            git::delete_worktree(&selected_worktree);
-            self.worktrees
-                .retain(|w| !w.path().eq(selected_worktree.path()));
-            self.state.select(None);
-            self.selected_index = None;
+        if let Some(path) = self.selected_worktree_path() {
+            if let Some(index) = self.worktrees.iter().position(|w| w.path() == path) {
+                git::delete_worktree(&self.worktrees[index]);
+                self.worktrees.remove(index);
+                self.state.select(None);
+                self.selected_index = None;
+            }
         }
     }
 
-    pub fn selected_worktree(&mut self) -> Option<git::Worktree> {
-        let selected_index = self.selected_index?;
-        self.filtered_items()
-            .get(selected_index)
-            .map(|worktree| (*worktree).clone())
+    fn selected_worktree_path(&mut self) -> Option<String> {
+        self.selected_index.and_then(|index| {
+            self.filtered_items()
+                .get(index)
+                .and_then(|wt| Some(wt.path().to_string()))
+        })
     }
 
     fn copy_path_of_selected_worktree(&mut self) {
         match Clipboard::new() {
-            Ok(mut clipboard) => match self.selected_worktree() {
-                Some(selected_worktree) => {
-                    match clipboard.set_text(selected_worktree.path().to_string()) {
-                        Ok(_) => {
-                            debug!("Copied the path {} to clipboard", selected_worktree.path())
-                        }
-                        Err(error) => error!(
-                            "Could not copy the path {} to clipboard. Error: {}",
-                            selected_worktree.path(),
-                            error
-                        ),
+            Ok(mut clipboard) => match self.selected_worktree_path() {
+                Some(path) => match clipboard.set_text(path.clone()) {
+                    Ok(_) => {
+                        debug!("Copied the path {} to clipboard", path)
                     }
-                }
+                    Err(error) => error!(
+                        "Could not copy the path {} to clipboard. Error: {}",
+                        path, error
+                    ),
+                },
                 None => debug!("No worktree was selected. Nothing to copy to clipboard"),
             },
             Err(error) => error!("Could access the clipboard. Error: {}", error),

@@ -23,19 +23,6 @@ impl Worktree {
     }
 }
 
-impl Clone for Worktree {
-    fn clone(&self) -> Self {
-        let repo = git2::Repository::discover(self.path()).expect("Could not open repository");
-        let worktree = repo
-            .find_worktree(self.name())
-            .expect("Could not find worktree");
-        Worktree {
-            git_worktree: worktree,
-            has_remote_branch: self.has_remote_branch,
-        }
-    }
-}
-
 pub fn delete_worktree(worktree: &Worktree) {
     let worktree_path = Path::new(worktree.path());
     if worktree_path.exists() {
