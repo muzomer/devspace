@@ -3,13 +3,12 @@ use arboard::Clipboard;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::{Style, Stylize},
+    style::{Color, Style, Stylize},
+    text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, ListState, StatefulWidget},
     Frame,
 };
 use tracing::{debug, error};
-
-use crate::git::Worktree;
 
 use super::{filter::FilterComponent, EventState};
 use super::{
@@ -18,7 +17,7 @@ use super::{
 };
 
 pub struct WorktreesComponent {
-    worktrees: Vec<Worktree>,
+    worktrees: Vec<git::Worktree>,
     filter: FilterComponent,
     state: ListState,
     focus: Focus,
@@ -26,7 +25,7 @@ pub struct WorktreesComponent {
 }
 
 impl WorktreesComponent {
-    pub fn new(worktrees: Vec<Worktree>) -> WorktreesComponent {
+    pub fn new(worktrees: Vec<git::Worktree>) -> WorktreesComponent {
         let selected_index = if worktrees.is_empty() { None } else { Some(0) };
         Self {
             filter: FilterComponent::default(),
@@ -58,29 +57,33 @@ impl WorktreesComponent {
             Focus::Filter => {
                 let result = self.filter.handle_key(key);
                 if result == EventState::Consumed {
-                    result
-                } else {
-                    if key.modifiers == KeyModifiers::CONTROL {
-                        match key.code {
-                            KeyCode::Char('n') => {
-                                self.select(ItemOrder::Next);
-                            }
-                            KeyCode::Char('p') => {
-                                self.select(ItemOrder::Previous);
-                            }
-                            _ => return EventState::NotConsumed,
-                        }
-                    } else {
-                        match key.code {
-                            KeyCode::Tab => self.focus = Focus::List,
-                            KeyCode::Enter => {
-                                self.copy_path_of_selected_worktree();
-                                return EventState::NotConsumed;
-                            }
-                            _ => return EventState::NotConsumed,
-                        }
+                    return result;
+                }
+
+                match (key.code, key.modifiers) {
+                    (KeyCode::Char('n'), KeyModifiers::CONTROL)
+                    | (KeyCode::Down, KeyModifiers::NONE) => {
+                        self.select(ItemOrder::Next);
+                        EventState::Consumed
                     }
-                    EventState::Consumed
+                    (KeyCode::Char('p'), KeyModifiers::CONTROL)
+                    | (KeyCode::Up, KeyModifiers::NONE) => {
+                        self.select(ItemOrder::Previous);
+                        EventState::Consumed
+                    }
+                    (KeyCode::Tab, KeyModifiers::NONE) => {
+                        self.focus = Focus::List;
+                        EventState::Consumed
+                    }
+                    (KeyCode::Enter, KeyModifiers::NONE) => {
+                        if self.copy_path_of_selected_worktree() {
+                            debug!("copied path of selected worktree");
+                            return EventState::Exit;
+                        }
+                        EventState::Consumed
+                    }
+
+                    _ => return EventState::NotConsumed,
                 }
             }
             Focus::List => {
@@ -91,8 +94,9 @@ impl WorktreesComponent {
                     KeyCode::Char('G') | KeyCode::End => self.select(ItemOrder::Last),
                     KeyCode::Tab => self.focus = Focus::Filter,
                     KeyCode::Enter => {
-                        self.copy_path_of_selected_worktree();
-                        return EventState::NotConsumed;
+                        if self.copy_path_of_selected_worktree() {
+                            return EventState::Exit;
+                        }
                     }
                     _ => return EventState::NotConsumed,
                 }
@@ -101,7 +105,7 @@ impl WorktreesComponent {
         }
     }
 
-    pub fn add(&mut self, new_worktree: Worktree) {
+    pub fn add(&mut self, new_worktree: git::Worktree) {
         let new_worktree_path = new_worktree.path().to_string();
         self.worktrees.push(new_worktree);
         let new_worktree_index = self
@@ -114,63 +118,65 @@ impl WorktreesComponent {
     }
 
     pub fn delete_selected_worktree(&mut self) {
-        if let Some(selected_worktree) = self.selected_worktree() {
-            if let Err(error) = git::delete_worktree(&selected_worktree) {
-                error!("Could not delete the worktree. Error: {}", error);
-            } else {
-                self.worktrees.retain(|w| !w.path().eq(selected_worktree.path()));
+        if let Some(path) = self.selected_worktree_path() {
+            if let Some(index) = self.worktrees.iter().position(|w| w.path() == path) {
+                git::delete_worktree(&self.worktrees[index]);
+                self.worktrees.remove(index);
                 self.state.select(None);
                 self.selected_index = None;
             }
         }
     }
 
-    pub fn selected_worktree(&mut self) -> Option<Worktree> {
-        match self.selected_index {
-            Some(index) => match self.filtered_items().get(index) {
-                Some(worktree) => Some((*worktree).clone()),
-                None => None,
-            },
-            None => None,
-        }
+    fn selected_worktree_path(&mut self) -> Option<String> {
+        self.selected_index.and_then(|index| {
+            self.filtered_items()
+                .get(index)
+                .and_then(|wt| Some(wt.path().to_string()))
+        })
     }
 
-    fn copy_path_of_selected_worktree(&mut self) {
-        match Clipboard::new() {
-            Ok(mut clipboard) => match self.selected_worktree() {
-                Some(selected_worktree) => {
-                    match clipboard.set_text(selected_worktree.path().to_string()) {
-                        Ok(_) => {
-                            debug!("Copied the path {} to clipboard", selected_worktree.path())
-                        }
-                        Err(error) => error!(
-                            "Could not copy the path {} to clipboard. Error: {}",
-                            selected_worktree.path(),
-                            error
-                        ),
-                    }
+    fn copy_path_of_selected_worktree(&mut self) -> bool {
+        if let Ok(mut clipboard) = Clipboard::new() {
+            if let Some(path) = self.selected_worktree_path() {
+                if clipboard.set_text(path.clone()).is_ok() {
+                    debug!("Copied the path {} to clipboard", path);
+                    return true;
                 }
-                None => debug!("No worktree was selected. Nothing to copy to clipboard"),
-            },
-            Err(error) => error!("Could access the clipboard. Error: {}", error),
+                error!("Could not copy the path {} to clipboard.", path);
+            } else {
+                debug!("No worktree was selected. Nothing to copy to clipboard");
+            }
+        } else {
+            error!("Could not access the clipboard.");
         }
+        false
     }
 }
 
-impl From<&Worktree> for ListItem<'_> {
-    fn from(value: &Worktree) -> Self {
-        // TODO: only display the worktree name and repository
-        ListItem::new(value.path().to_string())
+impl From<&git::Worktree> for ListItem<'_> {
+    fn from(value: &git::Worktree) -> Self {
+        let (remote_indicator, color) = if value.has_remote_branch {
+            ("✓", Color::Green)
+        } else {
+            ("✗", Color::Red)
+        };
+
+        let indicator_span =
+            Span::styled(format!("{} ", remote_indicator), Style::default().fg(color));
+        let path_span = Span::from(value.path().to_string());
+
+        ListItem::new(Line::from(vec![indicator_span, path_span]))
     }
 }
 
-impl ListComponent<Worktree> for WorktreesComponent {
-    fn filtered_items(&mut self) -> Vec<&Worktree> {
+impl ListComponent<git::Worktree> for WorktreesComponent {
+    fn filtered_items(&mut self) -> Vec<&git::Worktree> {
         let mut filtered_worktrees = self
             .worktrees
             .iter()
             .filter(|worktree| worktree.path().contains(self.filter.value.as_str()))
-            .collect::<Vec<&Worktree>>();
+            .collect::<Vec<&git::Worktree>>();
 
         filtered_worktrees.sort_by(|w1, w2| w1.path().cmp(w2.path()));
         filtered_worktrees

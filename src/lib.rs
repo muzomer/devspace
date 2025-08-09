@@ -19,7 +19,7 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut app::App) -> io
         terminal.draw(|f| app.draw(f))?;
 
         if let Event::Key(key) = event::read()? {
-            if app.handle_key(key) == EventState::NotConsumed {
+            if app.handle_key(key) == EventState::Exit {
                 break Ok(false);
             }
         };

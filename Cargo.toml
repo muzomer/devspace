@@ -1,9 +1,9 @@
 [package]
 name = "devspace"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["Muzaffar Omer <muzaffar.omer@gmail.com>"]
-description = "Tool to create and manage development workspaces"
+description = "Tool to create and manage git worktrees"
 readme = "README.md"
 repository = "https://github.com/muzomer/devspace"
 license-file = "LICENSE"

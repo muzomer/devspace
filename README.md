@@ -7,8 +7,6 @@
   <a href="#workflow">Workflow</a> •
   <a href="#installation">Installation</a> •
   <a href="#usage">Usage</a> •
-  <a href="#development">Development</a> •
-  <a href="#contribution">Contribution</a> •
   <a href="#roadmap">Roadmap</a><br>
 </p>
 
@@ -76,6 +74,7 @@ Lists the worktrees that exist under the worktrees directory.
 | `Ctrl + P` or `Up Arrow`  | Move up in the list |
 | `Ctrl + D` | Switch to `Repositories Mode` |
 | `Ctrl + X` | Delete the selected worktree |
+| `Ctrl + C` | Quit |
 | `Enter` | Copy the full path of the selected worktree to the clipboard and exit |
 
 ### Repositories Mode
@@ -96,63 +95,10 @@ Creates new worktree in the selected repository.
 | ------------- | ------------- |
 | `Enter` | Create new worktree with the provided branch name in the selected repository and switch to `Worktrees Mode` |
 
-# Development
-
-To enable debugging in this project, you need to set the `RUST_LOG` environment variable. The project uses the `tracing` library for logging, and the log level is configured via this environment variable.
-
-### Set the `RUST_LOG` Environment Variable
-
-You can set the `RUST_LOG` environment variable to control the verbosity of the logs. Here are a few examples:
-
-- **To see all `info` level logs (the default):**
-    ```bash
-    export RUST_LOG=info
-    ```
-
-- **To enable `debug` level logging for all crates:**
-    ```bash
-    export RUST_LOG=debug
-    ```
-
-- **To enable `debug` level logging only for the `devspace` crate:**
-    ```bash
-    export RUST_LOG=devspace=debug
-    ```
-
-- **For the most verbose logging, you can use `trace`:**
-    ```bash
-    export RUST_LOG=trace
-    ```
-
-### Run the Application
-
-After setting the environment variable, run the application as you normally would:
-
-```bash
-devspace
-```
-
-### View the Logs
-
-The log output is written to a file named `devspace.log`. This file is located in the application's data directory. On Linux, this is typically `~/.local/share/devspace/devspace.log`.
-
-You can view the logs in real-time by using the `tail` command:
-
-```bash
-tail -f ~/.local/share/devspace/devspace.log
-```
-
-By adjusting the `RUST_LOG` environment variable, you can control the level of detail in the logs, which is very helpful for debugging.
-
-# Contribution
-
-So far there are no specific rules for contributions. Pull requests are very welcome. Feel free to checkout the repo and submit new PRs for fixes or new feature requests.
-
 # Roadmap
 
 - [x] Create new worktrees.
 - [x] Delete worktrees.
-- [ ] Show the status of worktrees (e.g. stale, active ...etc.).
+- [x] Show the status of worktrees (e.g. stale, active ...etc.).
+- [ ] Create worktrees from remote branches.
 - [ ] Add metadata to worktrees, e.g. JIRA links, PR links ...etc.
-
-More features might be added in the future.
