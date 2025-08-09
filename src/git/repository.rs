@@ -32,6 +32,7 @@ impl Repository {
         match result {
             Ok(created_worktree) => Some(super::Worktree {
                 git_worktree: created_worktree,
+                has_remote_branch: false,
             }),
             Err(error) => {
                 panic!(
@@ -58,7 +59,10 @@ impl Repository {
                 worktrees_arr.iter().for_each(|worktree| {
                     if let Some(worktree_name) = worktree {
                         if let Ok(git_worktree) = self.0.find_worktree(worktree_name) {
-                            git_worktrees.push(super::Worktree { git_worktree });
+                            git_worktrees.push(super::Worktree {
+                                git_worktree,
+                                has_remote_branch: false,
+                            });
                         }
                     }
                 });

@@ -115,13 +115,11 @@ impl WorktreesComponent {
 
     pub fn delete_selected_worktree(&mut self) {
         if let Some(selected_worktree) = self.selected_worktree() {
-            if let Err(error) = git::delete_worktree(&selected_worktree) {
-                error!("Could not delete the worktree. Error: {}", error);
-            } else {
-                self.worktrees.retain(|w| !w.path().eq(selected_worktree.path()));
-                self.state.select(None);
-                self.selected_index = None;
-            }
+            git::delete_worktree(&selected_worktree);
+            self.worktrees
+                .retain(|w| !w.path().eq(selected_worktree.path()));
+            self.state.select(None);
+            self.selected_index = None;
         }
     }
 
