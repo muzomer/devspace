@@ -45,6 +45,11 @@ pub fn delete_worktree(worktree: &Worktree) {
         let mut head = repo.head()?;
         if head.is_branch() {
             head.delete()?;
+        } else {
+            debug!(
+                "Head of worktree {} is not a branch. Skipped deleltion of the branch",
+                worktree.name()
+            );
         }
         Ok(())
     }) {
