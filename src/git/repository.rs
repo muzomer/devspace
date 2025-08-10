@@ -1,4 +1,3 @@
-use git2::WorktreeAddOptions;
 use std::{
     ffi::OsStr,
     fs::{self, read_dir},
@@ -9,7 +8,20 @@ use tracing::{debug, error};
 pub struct Repository(git2::Repository);
 impl Repository {
     pub fn from_path(path: &str) -> Result<Self, git2::Error> {
-        Ok(Self(git2::Repository::open(path)?))
+        let repo = git2::Repository::open(path)?;
+        // git fetch --prune
+        if let Err(err) = repo.remotes().and_then(|remotes| {
+            remotes.iter().for_each(|remote| {
+                if let Err(e) = fetch_with_prune(&repo, remote.expect("Could not get remote name"))
+                {
+                    debug!("Could not fetch from remote. Error: {}", e);
+                }
+            });
+            Ok(())
+        }) {
+            debug!("Could not fetch from remotes. Error: {}", err);
+        }
+        Ok(Self(repo))
     }
     pub fn create_new_worktree(
         &self,
@@ -21,7 +33,7 @@ impl Repository {
 
         let _ = fs::create_dir_all(&repo_worktrees_dir);
 
-        let mut create_worktree_options = WorktreeAddOptions::new();
+        let mut create_worktree_options = git2::WorktreeAddOptions::new();
         create_worktree_options.checkout_existing(true);
         let result = self.0.worktree(
             worktree_name,
@@ -88,6 +100,20 @@ impl Repository {
     }
 }
 
+fn fetch_with_prune(git_repo: &git2::Repository, remote_name: &str) -> Result<(), git2::Error> {
+    let refspecs: Vec<String> = vec![];
+    let mut fetch_opts = git2::FetchOptions::new();
+    fetch_opts.prune(git2::FetchPrune::On);
+
+    let callbacks = git2::RemoteCallbacks::new();
+    fetch_opts.remote_callbacks(callbacks);
+
+    git_repo
+        .find_remote(remote_name)?
+        .fetch(&refspecs, Some(&mut fetch_opts), None)?;
+
+    Ok(())
+}
 pub fn list_repositories(path: &str) -> Vec<Repository> {
     debug!("Listing repositories in: {}", path);
     let repositories: Vec<Repository> = find_git_dirs(Path::new(path))
