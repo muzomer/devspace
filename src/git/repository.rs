@@ -107,6 +107,14 @@ pub fn list_repositories(path: &str) -> Vec<Repository> {
     repositories
 }
 
+pub fn worktrees_of_repositories(repositories: &Vec<Repository>) -> Vec<super::Worktree> {
+    let mut worktrees: Vec<super::Worktree> = Vec::new();
+    repositories.iter().for_each(|repo| {
+        worktrees.append(&mut repo.worktrees());
+    });
+    worktrees
+}
+
 fn is_git_dir(dir: &Path) -> bool {
     if !dir.is_dir() {
         return false;
