@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use std::{
     ffi::OsStr,
     fs::{self, read_dir},
@@ -117,7 +118,7 @@ fn fetch_with_prune(git_repo: &git2::Repository, remote_name: &str) -> Result<()
 pub fn list_repositories(path: &str) -> Vec<Repository> {
     debug!("Listing repositories in: {}", path);
     let repositories: Vec<Repository> = find_git_dirs(Path::new(path))
-        .iter()
+        .par_iter()
         .filter_map(|dir| match Repository::from_path(dir) {
             Ok(created_repo) => Some(created_repo),
             Err(err) => {
