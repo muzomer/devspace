@@ -122,8 +122,6 @@ impl WorktreesComponent {
             if let Some(index) = self.worktrees.iter().position(|w| w.path() == path) {
                 git::delete_worktree(&self.worktrees[index]);
                 self.worktrees.remove(index);
-                self.state.select(None);
-                self.selected_index = None;
             }
         }
     }

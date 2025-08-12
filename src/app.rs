@@ -18,8 +18,8 @@ pub enum Focus {
 }
 
 pub struct App {
-    worktrees: WorktreesComponent,
-    repositories: RepositoriesComponent,
+    worktrees_component: WorktreesComponent,
+    repositories_component: RepositoriesComponent,
     create_worktree: CreateWorktreeComponent,
     args: Args,
     focus: Focus,
@@ -28,11 +28,14 @@ pub struct App {
 impl App {
     pub fn new() -> App {
         let args = Args::new();
-        let repositories = RepositoriesComponent::new(git::list_repositories(&args.repos_dir));
-        let worktrees = WorktreesComponent::new(repositories.worktrees());
+        let repositories = git::list_repositories(&args.repos_dir);
+        let worktrees = git::worktrees_of_repositories(&repositories);
+
+        let repositories_component = RepositoriesComponent::new(repositories);
+        let worktrees_component = WorktreesComponent::new(worktrees);
         Self {
-            worktrees,
-            repositories,
+            worktrees_component,
+            repositories_component,
             create_worktree: CreateWorktreeComponent::new(),
             focus: Focus::Worktrees,
             args,
@@ -44,11 +47,11 @@ impl App {
             .constraints([Constraint::Percentage(100)])
             .areas(frame.area());
 
-        self.worktrees.draw(frame, full_area);
+        self.worktrees_component.draw(frame, full_area);
 
         if let Focus::Repositories = self.focus {
             let popup_area = self.popup_area(full_area, 50, 50);
-            self.repositories.draw(frame, popup_area);
+            self.repositories_component.draw(frame, popup_area);
         }
 
         if let Focus::CreateWorktree = self.focus {
@@ -60,7 +63,7 @@ impl App {
     pub fn handle_key(&mut self, key: KeyEvent) -> EventState {
         let result = match self.focus {
             Focus::Worktrees => {
-                let result = self.worktrees.handle_key(key);
+                let result = self.worktrees_component.handle_key(key);
                 if result == EventState::Consumed || result == EventState::Exit {
                     result
                 } else {
@@ -70,7 +73,7 @@ impl App {
                             EventState::Consumed
                         }
                         (KeyCode::Char('x'), KeyModifiers::CONTROL) => {
-                            self.worktrees.delete_selected_worktree();
+                            self.worktrees_component.delete_selected_worktree();
                             EventState::Consumed
                         }
                         _ => EventState::NotConsumed,
@@ -78,7 +81,7 @@ impl App {
                 }
             }
             Focus::Repositories => {
-                let result = self.repositories.handle_key(key);
+                let result = self.repositories_component.handle_key(key);
                 if result == EventState::Consumed {
                     result
                 } else {
@@ -102,12 +105,14 @@ impl App {
                     if key.code == KeyCode::Enter
                         && !self.create_worktree.new_worktree_name.is_empty()
                     {
-                        if let Some(selected_repository) = self.repositories.selected_repository() {
+                        if let Some(selected_repository) =
+                            self.repositories_component.selected_repository()
+                        {
                             if let Some(created_worktree) = selected_repository.create_new_worktree(
                                 &self.create_worktree.new_worktree_name,
                                 &self.args.worktrees_dir,
                             ) {
-                                self.worktrees.add(created_worktree);
+                                self.worktrees_component.add(created_worktree);
                             }
                         }
                     }

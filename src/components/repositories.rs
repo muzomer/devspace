@@ -1,5 +1,5 @@
 use super::list::ItemOrder;
-use crate::git::{Repository, Worktree};
+use crate::git::Repository;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
@@ -104,13 +104,6 @@ impl RepositoriesComponent {
             }
             None => None,
         }
-    }
-
-    pub fn worktrees(&self) -> Vec<Worktree> {
-        self.repositories
-            .iter()
-            .flat_map(|repository| repository.worktrees())
-            .collect()
     }
 }
 

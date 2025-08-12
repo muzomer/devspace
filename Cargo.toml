@@ -1,6 +1,6 @@
 [package]
 name = "devspace"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 authors = ["Muzaffar Omer <muzaffar.omer@gmail.com>"]
 description = "Tool to create and manage git worktrees"
@@ -19,6 +19,7 @@ directories = "6.0.0"
 git2 = "0.20.0"
 lazy_static = "1.5.0"
 ratatui = "0.29.0"
+rayon = "1.10.0"
 tracing = "0.1.41"
 tracing-error = "0.2.1"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
