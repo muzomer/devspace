@@ -10,14 +10,16 @@ use super::EventState;
 
 pub struct FilterComponent {
     pub value: String,
+    title: String,
     character_index: usize,
 }
 
 impl FilterComponent {
-    pub fn default() -> Self {
+    pub fn new(title: String) -> Self {
         Self {
             value: String::new(),
             character_index: 0,
+            title,
         }
     }
 
@@ -25,8 +27,8 @@ impl FilterComponent {
         let input = Paragraph::new(self.value.as_str()).block(
             Block::bordered()
                 .border_type(BorderType::Rounded)
-                .title("Filter")
-                .style(Style::new().white()),
+                .title(self.title.as_str())
+                .style(Style::new().white().bold()),
         );
         f.render_widget(input, rect);
     }

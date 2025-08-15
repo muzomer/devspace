@@ -26,33 +26,30 @@ impl RepositoriesComponent {
     pub fn new(repositories: Vec<Repository>) -> Self {
         Self {
             repositories,
-            filter: FilterComponent::default(),
+            filter: FilterComponent::new(" Filter Repositories ".to_string()),
             state: ListState::default().with_selected(Some(0)),
             selected_index: Some(0),
             focus: Focus::Filter,
         }
     }
+
     pub fn draw(&mut self, f: &mut Frame, rect: Rect) {
         f.render_widget(Clear, rect);
-
         let [filter_area, repos_list_area] =
             Layout::vertical([Constraint::Length(3), Constraint::Min(1)]).areas(rect);
-
         self.filter.draw(f, filter_area);
-
         let list = List::new(self.filtered_items())
             .block(
                 Block::bordered()
                     .border_type(BorderType::Rounded)
-                    .title("Repositories")
                     .title_alignment(Alignment::Center),
             )
             .style(Style::new().white())
             .highlight_style(SELECTED_STYLE)
             .direction(ListDirection::TopToBottom);
-
         StatefulWidget::render(list, repos_list_area, f.buffer_mut(), &mut self.state);
     }
+
     pub fn handle_key(&mut self, key: KeyEvent) -> EventState {
         match self.focus {
             Focus::Filter => {

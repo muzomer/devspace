@@ -28,7 +28,7 @@ impl WorktreesComponent {
     pub fn new(worktrees: Vec<git::Worktree>) -> WorktreesComponent {
         let selected_index = if worktrees.is_empty() { None } else { Some(0) };
         Self {
-            filter: FilterComponent::default(),
+            filter: FilterComponent::new(" Filter Worktrees ".to_string()),
             state: ListState::default().with_selected(selected_index),
             focus: Focus::Filter,
             selected_index,
