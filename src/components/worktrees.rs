@@ -5,7 +5,7 @@ use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Color, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, ListState, StatefulWidget},
+    widgets::{Block, List, ListItem, ListState, StatefulWidget},
     Frame,
 };
 use tracing::{debug, error};
@@ -37,7 +37,7 @@ impl WorktreesComponent {
     }
 
     pub fn draw(&mut self, f: &mut Frame, rect: Rect) {
-        let block = Block::new().borders(Borders::all());
+        let block = Block::bordered().border_type(ratatui::widgets::BorderType::Rounded);
         let [filter_area, list_area] =
             Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(rect);
 

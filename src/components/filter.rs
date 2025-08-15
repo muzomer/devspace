@@ -2,7 +2,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::Rect,
     style::{Style, Stylize},
-    widgets::{Block, Paragraph},
+    widgets::{Block, BorderType, Paragraph},
     Frame,
 };
 
@@ -24,6 +24,7 @@ impl FilterComponent {
     pub fn draw(&mut self, f: &mut Frame, rect: Rect) {
         let input = Paragraph::new(self.value.as_str()).block(
             Block::bordered()
+                .border_type(BorderType::Rounded)
                 .title("Filter")
                 .style(Style::new().white()),
         );

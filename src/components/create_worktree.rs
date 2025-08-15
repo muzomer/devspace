@@ -1,7 +1,7 @@
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
-    widgets::{Block, Clear, Padding, Paragraph, Widget},
+    widgets::{Block, BorderType, Clear, Padding, Paragraph, Widget},
     Frame,
 };
 
@@ -30,6 +30,7 @@ impl CreateWorktreeComponent {
     pub fn draw(&mut self, frame: &mut Frame, area: Rect) {
         frame.render_widget(Clear, area);
         Block::bordered()
+            .border_type(BorderType::Rounded)
             .title("New Worktree")
             .title_alignment(Alignment::Center)
             .render(area, frame.buffer_mut());
@@ -44,7 +45,11 @@ impl CreateWorktreeComponent {
 
         Paragraph::new("Create new git worktree ...").render(label_area, frame.buffer_mut());
         Paragraph::new(self.new_worktree_name.as_str())
-            .block(Block::bordered().padding(Padding::horizontal(1)))
+            .block(
+                Block::bordered()
+                    .border_type(BorderType::Rounded)
+                    .padding(Padding::horizontal(1)),
+            )
             .render(input_area, frame.buffer_mut());
     }
 

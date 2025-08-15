@@ -4,7 +4,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
     style::{Style, Stylize},
-    widgets::{Block, Clear, List, ListDirection, ListItem, ListState, StatefulWidget},
+    widgets::{Block, BorderType, Clear, List, ListDirection, ListItem, ListState, StatefulWidget},
     Frame,
 };
 
@@ -43,6 +43,7 @@ impl RepositoriesComponent {
         let list = List::new(self.filtered_items())
             .block(
                 Block::bordered()
+                    .border_type(BorderType::Rounded)
                     .title("Repositories")
                     .title_alignment(Alignment::Center),
             )
