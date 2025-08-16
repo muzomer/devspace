@@ -1,3 +1,4 @@
+use git2::{Cred, RemoteCallbacks};
 use rayon::prelude::*;
 use std::{
     ffi::OsStr,
@@ -104,15 +105,16 @@ impl Repository {
 fn fetch_with_prune(git_repo: &git2::Repository, remote_name: &str) -> Result<(), git2::Error> {
     let refspecs: Vec<String> = vec![];
     let mut fetch_opts = git2::FetchOptions::new();
+
+    let mut callbacks = RemoteCallbacks::new();
+    callbacks.credentials(|_url, username_from_url, _allowed_types| {
+        Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"))
+    });
     fetch_opts.prune(git2::FetchPrune::On);
-
-    let callbacks = git2::RemoteCallbacks::new();
     fetch_opts.remote_callbacks(callbacks);
-
     git_repo
         .find_remote(remote_name)?
         .fetch(&refspecs, Some(&mut fetch_opts), None)?;
-
     Ok(())
 }
 pub fn list_repositories(path: &str) -> Vec<Repository> {
