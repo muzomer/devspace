@@ -5,7 +5,7 @@ use ratatui::{
 };
 
 use crate::{
-    cli::Args,
+    cli,
     components::{CreateWorktreeComponent, EventState, RepositoriesComponent, WorktreesComponent},
     git,
 };
@@ -21,13 +21,13 @@ pub struct App {
     worktrees_component: WorktreesComponent,
     repositories_component: RepositoriesComponent,
     create_worktree: CreateWorktreeComponent,
-    args: Args,
+    args: cli::Args,
     focus: Focus,
 }
 
 impl App {
     pub fn new() -> App {
-        let args = Args::new();
+        let args = cli::Args::new();
         let repositories = git::list_repositories(&args.repos_dir);
         let worktrees = git::worktrees_of_repositories(&repositories);
 
