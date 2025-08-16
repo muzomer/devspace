@@ -2,7 +2,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::Rect,
     style::{Style, Stylize},
-    widgets::{Block, Paragraph},
+    widgets::{Block, BorderType, Paragraph},
     Frame,
 };
 
@@ -10,22 +10,25 @@ use super::EventState;
 
 pub struct FilterComponent {
     pub value: String,
+    title: String,
     character_index: usize,
 }
 
 impl FilterComponent {
-    pub fn default() -> Self {
+    pub fn new(title: String) -> Self {
         Self {
             value: String::new(),
             character_index: 0,
+            title,
         }
     }
 
     pub fn draw(&mut self, f: &mut Frame, rect: Rect) {
         let input = Paragraph::new(self.value.as_str()).block(
             Block::bordered()
-                .title("Filter")
-                .style(Style::new().white()),
+                .border_type(BorderType::Rounded)
+                .title(self.title.as_str())
+                .style(Style::new().white().bold()),
         );
         f.render_widget(input, rect);
     }
