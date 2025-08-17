@@ -451,7 +451,7 @@ dependencies = [
 
 [[package]]
 name = "devspace"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "arboard",
  "assert_cmd",
@@ -459,6 +459,7 @@ dependencies = [
  "color-eyre",
  "crossterm",
  "directories",
+ "expand-tilde",
  "git2",
  "lazy_static",
  "pretty_assertions",
@@ -547,6 +548,16 @@ name = "error-code"
 version = "3.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a5d9305ccc6942a704f4335694ecd3de2ea531b114ac2d51f5f843750787a92f"
+
+[[package]]
+name = "expand-tilde"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af42bffb99c712d4a07c17215b28e22f448b02e9d1481a8a5e05ebd837737f0c"
+dependencies = [
+ "home",
+ "thiserror",
+]
 
 [[package]]
 name = "eyre"
@@ -701,6 +712,15 @@ name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
+
+[[package]]
+name = "home"
+version = "0.5.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "589533453244b0995c858700322199b2becb13b627df2851f64a2775d024abcf"
+dependencies = [
+ "windows-sys 0.59.0",
+]
 
 [[package]]
 name = "icu_collections"

@@ -1,4 +1,5 @@
 use clap::Parser;
+use expand_tilde;
 
 #[derive(Debug, Parser)]
 #[command(version, about, long_about = None)]
@@ -24,6 +25,17 @@ pub struct Args {
 
 impl Args {
     pub fn new() -> Self {
-        Self::parse()
+        let mut args = Self::parse();
+        args.repos_dir = expand_tilde::expand_tilde(&args.repos_dir)
+            .expect("Could not expand the ~ in the repos_dir")
+            .to_str()
+            .expect("Could not convert the expanded repos_dir to a string")
+            .to_string();
+        args.worktrees_dir = expand_tilde::expand_tilde(&args.worktrees_dir)
+            .expect("Could not expand the ~ in the worktrees_dir")
+            .to_str()
+            .expect("Could not convert the expanded worktrees_dir to a string")
+            .to_string();
+        args
     }
 }

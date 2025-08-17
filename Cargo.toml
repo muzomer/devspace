@@ -1,6 +1,6 @@
 [package]
 name = "devspace"
-version = "0.3.2"
+version = "0.3.3"
 edition = "2021"
 authors = ["Muzaffar Omer <muzaffar.omer@gmail.com>"]
 description = "Tool to create and manage git worktrees"
@@ -16,6 +16,7 @@ clap = { version = "4.5.29", features = ["derive", "env"] }
 color-eyre = "0.6.3"
 crossterm = "0.28.1"
 directories = "6.0.0"
+expand-tilde = "0.6.1"
 git2 = "0.20.0"
 lazy_static = "1.5.0"
 ratatui = "0.29.0"
