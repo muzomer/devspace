@@ -9,19 +9,22 @@ use tracing::{debug, error};
 
 pub struct Repository(git2::Repository);
 impl Repository {
-    pub fn from_path(path: &str) -> Result<Self, git2::Error> {
+    pub fn from_path(path: &str, run_fetch: bool) -> Result<Self, git2::Error> {
         let repo = git2::Repository::open(path)?;
-        // git fetch --prune
-        if let Err(err) = repo.remotes().and_then(|remotes| {
-            remotes.iter().for_each(|remote| {
-                if let Err(e) = fetch_with_prune(&repo, remote.expect("Could not get remote name"))
-                {
-                    debug!("Could not fetch from remote. Error: {}", e);
-                }
-            });
-            Ok(())
-        }) {
-            debug!("Could not fetch from remotes. Error: {}", err);
+        if run_fetch {
+            // git fetch --prune
+            if let Err(err) = repo.remotes().and_then(|remotes| {
+                remotes.iter().for_each(|remote| {
+                    if let Err(e) =
+                        fetch_with_prune(&repo, remote.expect("Could not get remote name"))
+                    {
+                        debug!("Could not fetch from remote. Error: {}", e);
+                    }
+                });
+                Ok(())
+            }) {
+                debug!("Could not fetch from remotes. Error: {}", err);
+            }
         }
         Ok(Self(repo))
     }
@@ -117,11 +120,11 @@ fn fetch_with_prune(git_repo: &git2::Repository, remote_name: &str) -> Result<()
         .fetch(&refspecs, Some(&mut fetch_opts), None)?;
     Ok(())
 }
-pub fn list_repositories(path: &str) -> Vec<Repository> {
+pub fn list_repositories(path: &str, run_fetch: bool) -> Vec<Repository> {
     debug!("Listing repositories in: {}", path);
     let repositories: Vec<Repository> = find_git_dirs(Path::new(path))
         .par_iter()
-        .filter_map(|dir| match Repository::from_path(dir) {
+        .filter_map(|dir| match Repository::from_path(dir, run_fetch) {
             Ok(created_repo) => Some(created_repo),
             Err(err) => {
                 error!(

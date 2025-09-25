@@ -21,6 +21,15 @@ pub struct Args {
         env = "DEVSPACE_REPOS_DIR"
     )]
     pub repos_dir: String,
+
+    /// Whether to run git fetch inside each repo. Default: false
+    #[arg(
+        short = 'f',
+        long = "run-fetch",
+        value_name = "BOOLEAN",
+        default_value_t = false
+    )]
+    pub run_fetch: bool,
 }
 
 impl Args {
