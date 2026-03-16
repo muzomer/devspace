@@ -22,7 +22,7 @@ pub struct Args {
     )]
     pub repos_dir: String,
 
-    /// Whether to run git fetch inside each repo. Default: false
+    /// Whether to run git fetch for each repo. Default: false
     #[arg(
         short = 'f',
         long = "run-fetch",
