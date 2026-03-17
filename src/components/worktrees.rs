@@ -1,5 +1,5 @@
 use crate::git;
-use arboard::{Clipboard, LinuxClipboardKind, SetExtLinux};
+use arboard::Clipboard;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
@@ -151,11 +151,7 @@ impl WorktreesComponent {
             }
         };
 
-        if let Err(e) = clipboard
-            .set()
-            .clipboard(LinuxClipboardKind::Secondary)
-            .text(&path)
-        {
+        if let Err(e) = clipboard.set().text(&path) {
             error!("Could not copy the path {} to clipboard: {}", path, e);
             return false;
         }
