@@ -1,6 +1,6 @@
 [package]
 name = "devspace"
-version = "0.3.3"
+version = "0.3.4"
 edition = "2021"
 authors = ["Muzaffar Omer <muzaffar.omer@gmail.com>"]
 description = "Tool to create and manage git worktrees"
@@ -11,7 +11,7 @@ keywords = ["git", "worktree", "workspace"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-arboard = "3.4.1"
+arboard = { version = "3.4.1", features = ["wayland-data-control"] }
 clap = { version = "4.5.29", features = ["derive", "env"] }
 color-eyre = "0.6.3"
 crossterm = "0.28.1"
