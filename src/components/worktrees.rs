@@ -1,5 +1,5 @@
 use crate::git;
-use arboard::Clipboard;
+use arboard::{Clipboard, LinuxClipboardKind, SetExtLinux};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
@@ -135,20 +135,33 @@ impl WorktreesComponent {
     }
 
     fn copy_path_of_selected_worktree(&mut self) -> bool {
-        if let Ok(mut clipboard) = Clipboard::new() {
-            if let Some(path) = self.selected_worktree_path() {
-                if clipboard.set_text(path.clone()).is_ok() {
-                    debug!("Copied the path {} to clipboard", path);
-                    return true;
-                }
-                error!("Could not copy the path {} to clipboard.", path);
-            } else {
+        let path = match self.selected_worktree_path() {
+            Some(path) => path,
+            None => {
                 debug!("No worktree was selected. Nothing to copy to clipboard");
+                return false;
             }
-        } else {
-            error!("Could not access the clipboard.");
+        };
+
+        let mut clipboard = match Clipboard::new() {
+            Ok(cb) => cb,
+            Err(e) => {
+                error!("Could not access the clipboard: {}", e);
+                return false;
+            }
+        };
+
+        if let Err(e) = clipboard
+            .set()
+            .clipboard(LinuxClipboardKind::Secondary)
+            .text(&path)
+        {
+            error!("Could not copy the path {} to clipboard: {}", path, e);
+            return false;
         }
-        false
+
+        debug!("Copied the path {} to clipboard", path);
+        true
     }
 }
 
