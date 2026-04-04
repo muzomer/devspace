@@ -75,7 +75,9 @@ impl App {
                         (KeyCode::Char('x'), KeyModifiers::CONTROL) => {
                             match self.worktrees_component.delete_selected_worktree() {
                                 Ok(()) => self.worktrees_component.last_error = None,
-                                Err(e) => self.worktrees_component.last_error = Some(format!("{:#}", e)),
+                                Err(e) => {
+                                    self.worktrees_component.last_error = Some(format!("{:#}", e))
+                                }
                             }
                             EventState::Consumed
                         }

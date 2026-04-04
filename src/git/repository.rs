@@ -45,16 +45,40 @@ impl Repository {
             )
         })?;
 
-        let mut create_worktree_options = git2::WorktreeAddOptions::new();
-        create_worktree_options.checkout_existing(true);
-        let created_worktree = self
-            .0
-            .worktree(
-                worktree_name,
-                new_worktree_dir.as_path(),
-                Some(&create_worktree_options),
-            )
-            .wrap_err_with(|| format!("Could not create worktree '{}'", worktree_name))?;
+        let remote_branch = self.find_remote_branch_oid(worktree_name);
+
+        let created_worktree = if let Some((remote_name, oid)) = remote_branch {
+            debug!(
+                "Found remote branch '{}/{}', creating tracking branch",
+                remote_name, worktree_name
+            );
+            let commit = self
+                .0
+                .find_commit(oid)
+                .wrap_err("Could not find commit for remote branch")?;
+            let mut local_branch = self
+                .0
+                .branch(worktree_name, &commit, false)
+                .wrap_err_with(|| format!("Could not create local branch '{}'", worktree_name))?;
+            let upstream_name = format!("{}/{}", remote_name, worktree_name);
+            local_branch
+                .set_upstream(Some(&upstream_name))
+                .wrap_err_with(|| format!("Could not set upstream to '{}'", upstream_name))?;
+
+            let branch_ref = local_branch.into_reference();
+            let mut opts = git2::WorktreeAddOptions::new();
+            opts.checkout_existing(true);
+            opts.reference(Some(&branch_ref));
+            self.0
+                .worktree(worktree_name, new_worktree_dir.as_path(), Some(&opts))
+                .wrap_err_with(|| format!("Could not create worktree '{}'", worktree_name))?
+        } else {
+            let mut opts = git2::WorktreeAddOptions::new();
+            opts.checkout_existing(true);
+            self.0
+                .worktree(worktree_name, new_worktree_dir.as_path(), Some(&opts))
+                .wrap_err_with(|| format!("Could not create worktree '{}'", worktree_name))?
+        };
 
         let branch = self
             .0
@@ -70,6 +94,22 @@ impl Repository {
             git_worktree: created_worktree,
             has_remote_branch: branch.upstream().is_ok(),
         })
+    }
+
+    /// Searches all remotes for a branch named `branch_name` and returns the
+    /// remote name and the OID of its tip commit, if found.
+    fn find_remote_branch_oid(&self, branch_name: &str) -> Option<(String, git2::Oid)> {
+        let remotes = self.0.remotes().ok()?;
+        for remote_name in remotes.iter().flatten() {
+            let refname = format!("refs/remotes/{}/{}", remote_name, branch_name);
+            if let Ok(reference) = self.0.find_reference(&refname) {
+                if let Ok(oid) = reference.peel_to_commit().map(|c| c.id()) {
+                    debug!("Found remote branch ref '{}' at {}", refname, oid);
+                    return Some((remote_name.to_string(), oid));
+                }
+            }
+        }
+        None
     }
 
     pub fn name(&self) -> String {
@@ -217,6 +257,140 @@ mod tests {
     use super::*;
     use std::fs;
     use tempfile::tempdir;
+
+    /// Create a git repository with a single commit and return it along with the commit OID.
+    fn init_repo_with_commit(path: &Path) -> (git2::Repository, git2::Oid) {
+        let repo = git2::Repository::init(path).expect("Could not init repo");
+        let sig = git2::Signature::now("Test", "test@example.com").unwrap();
+        let oid = {
+            let tree_id = {
+                let mut tb = repo.treebuilder(None).unwrap();
+                let blob = repo.blob(b"hello").unwrap();
+                tb.insert("file.txt", blob, 0o100644).unwrap();
+                tb.write().unwrap()
+            };
+            let tree = repo.find_tree(tree_id).unwrap();
+            repo.commit(Some("HEAD"), &sig, &sig, "initial commit", &tree, &[])
+                .expect("Could not create initial commit")
+            // tree is dropped here before repo is moved
+        };
+        (repo, oid)
+    }
+
+    #[test]
+    fn test_find_remote_branch_oid_no_remote() {
+        let repo_dir = tempdir().expect("Could not create temporary directory");
+        let (_, _) = init_repo_with_commit(repo_dir.path());
+        let repo =
+            Repository(git2::Repository::open(repo_dir.path()).expect("Could not open repo"));
+        assert!(
+            repo.find_remote_branch_oid("feature-branch").is_none(),
+            "Expected None when no remote branch exists"
+        );
+    }
+
+    #[test]
+    fn test_find_remote_branch_oid_with_remote_ref() {
+        let repo_dir = tempdir().expect("Could not create temporary directory");
+        let (git_repo, oid) = init_repo_with_commit(repo_dir.path());
+        // Simulate a fetched remote ref without actually having a remote URL
+        git_repo
+            .reference(
+                "refs/remotes/origin/feature-branch",
+                oid,
+                false,
+                "simulated fetch",
+            )
+            .expect("Could not create remote ref");
+        // Add an entry in config so git2 treats "origin" as a remote
+        {
+            let mut config = git_repo.config().unwrap();
+            config
+                .set_str("remote.origin.url", "git@github.com:example/repo.git")
+                .unwrap();
+            config
+                .set_str("remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*")
+                .unwrap();
+        }
+        drop(git_repo);
+
+        let repo =
+            Repository(git2::Repository::open(repo_dir.path()).expect("Could not open repo"));
+        let result = repo.find_remote_branch_oid("feature-branch");
+        assert!(
+            result.is_some(),
+            "Expected Some when remote branch ref exists"
+        );
+        let (remote_name, found_oid) = result.unwrap();
+        assert_eq!(remote_name, "origin");
+        assert_eq!(found_oid, oid);
+    }
+
+    #[test]
+    fn test_create_worktree_from_remote_branch() {
+        let repo_dir = tempdir().expect("Could not create repo directory");
+        let worktrees_dir = tempdir().expect("Could not create worktrees directory");
+        let (git_repo, oid) = init_repo_with_commit(repo_dir.path());
+
+        // Simulate a fetched remote ref
+        git_repo
+            .reference(
+                "refs/remotes/origin/feature-branch",
+                oid,
+                false,
+                "simulated fetch",
+            )
+            .expect("Could not create remote ref");
+        {
+            let mut config = git_repo.config().unwrap();
+            config
+                .set_str("remote.origin.url", "git@github.com:example/repo.git")
+                .unwrap();
+            config
+                .set_str("remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*")
+                .unwrap();
+        }
+        drop(git_repo);
+
+        let repo =
+            Repository(git2::Repository::open(repo_dir.path()).expect("Could not open repo"));
+        let worktree = repo
+            .create_new_worktree("feature-branch", worktrees_dir.path().to_str().unwrap())
+            .expect("Could not create worktree from remote branch");
+
+        assert!(
+            worktree.has_remote_branch,
+            "Expected has_remote_branch to be true when created from remote branch"
+        );
+
+        // Verify the local branch was created with the upstream set
+        let git_repo = git2::Repository::open(repo_dir.path()).expect("Could not open repo");
+        let branch = git_repo
+            .find_branch("feature-branch", git2::BranchType::Local)
+            .expect("Local branch should exist");
+        assert!(
+            branch.upstream().is_ok(),
+            "Local branch should track the remote branch"
+        );
+    }
+
+    #[test]
+    fn test_create_worktree_no_remote_branch() {
+        let repo_dir = tempdir().expect("Could not create repo directory");
+        let worktrees_dir = tempdir().expect("Could not create worktrees directory");
+        init_repo_with_commit(repo_dir.path());
+
+        let repo =
+            Repository(git2::Repository::open(repo_dir.path()).expect("Could not open repo"));
+        let worktree = repo
+            .create_new_worktree("local-only-branch", worktrees_dir.path().to_str().unwrap())
+            .expect("Could not create worktree");
+
+        assert!(
+            !worktree.has_remote_branch,
+            "Expected has_remote_branch to be false when no remote branch exists"
+        );
+    }
 
     #[test]
     fn test_not_git_dir() {
