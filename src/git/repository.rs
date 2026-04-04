@@ -10,7 +10,6 @@ use tracing::{debug, error};
 pub struct Repository(git2::Repository);
 impl Repository {
     pub fn from_path(path: &str, run_fetch: bool) -> Result<Self, git2::Error> {
-        // TODO: fix authentication with https://docs.rs/auth-git2/latest/auth_git2/
         let repo = git2::Repository::open(path)?;
         if run_fetch {
             // git fetch --prune
