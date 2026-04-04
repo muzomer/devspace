@@ -1,5 +1,7 @@
 use crate::git;
 use arboard::Clipboard;
+use color_eyre::eyre;
+use color_eyre::eyre::WrapErr;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
@@ -8,7 +10,7 @@ use ratatui::{
     widgets::{Block, List, ListItem, ListState, StatefulWidget},
     Frame,
 };
-use tracing::{debug, error};
+use tracing::debug;
 
 use super::{filter::FilterComponent, EventState};
 use super::{
@@ -22,6 +24,7 @@ pub struct WorktreesComponent {
     state: ListState,
     focus: Focus,
     selected_index: Option<usize>,
+    pub last_error: Option<String>,
 }
 
 impl WorktreesComponent {
@@ -33,11 +36,17 @@ impl WorktreesComponent {
             focus: Focus::Filter,
             selected_index,
             worktrees,
+            last_error: None,
         }
     }
 
     pub fn draw(&mut self, f: &mut Frame, rect: Rect) {
-        let block = Block::bordered().border_type(ratatui::widgets::BorderType::Rounded);
+        let block = Block::bordered()
+            .border_type(ratatui::widgets::BorderType::Rounded)
+            .title_bottom(match &self.last_error {
+                Some(err) => Line::from(format!(" {} ", err)).red().bold(),
+                None => Line::default(),
+            });
         let [filter_area, list_area] =
             Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(rect);
 
@@ -76,14 +85,19 @@ impl WorktreesComponent {
                         EventState::Consumed
                     }
                     (KeyCode::Enter, KeyModifiers::NONE) => {
-                        if self.copy_path_of_selected_worktree() {
-                            debug!("copied path of selected worktree");
-                            return EventState::Exit;
+                        match self.copy_path_of_selected_worktree() {
+                            Ok(true) => {
+                                debug!("copied path of selected worktree");
+                                self.last_error = None;
+                                return EventState::Exit;
+                            }
+                            Ok(false) => {}
+                            Err(e) => self.last_error = Some(format!("{:#}", e)),
                         }
                         EventState::Consumed
                     }
 
-                    _ => return EventState::NotConsumed,
+                    _ => EventState::NotConsumed,
                 }
             }
             Focus::List => {
@@ -93,11 +107,14 @@ impl WorktreesComponent {
                     KeyCode::Char('g') | KeyCode::Home => self.select(ItemOrder::First),
                     KeyCode::Char('G') | KeyCode::End => self.select(ItemOrder::Last),
                     KeyCode::Tab => self.focus = Focus::Filter,
-                    KeyCode::Enter => {
-                        if self.copy_path_of_selected_worktree() {
+                    KeyCode::Enter => match self.copy_path_of_selected_worktree() {
+                        Ok(true) => {
+                            self.last_error = None;
                             return EventState::Exit;
                         }
-                    }
+                        Ok(false) => {}
+                        Err(e) => self.last_error = Some(format!("{:#}", e)),
+                    },
                     _ => return EventState::NotConsumed,
                 }
                 EventState::Consumed
@@ -117,47 +134,43 @@ impl WorktreesComponent {
         self.selected_index = new_worktree_index;
     }
 
-    pub fn delete_selected_worktree(&mut self) {
+    pub fn delete_selected_worktree(&mut self) -> eyre::Result<()> {
         if let Some(path) = self.selected_worktree_path() {
             if let Some(index) = self.worktrees.iter().position(|w| w.path() == path) {
-                git::delete_worktree(&self.worktrees[index]);
+                let result = git::delete_worktree(&self.worktrees[index]);
                 self.worktrees.remove(index);
+                result?;
             }
         }
+        Ok(())
     }
 
     fn selected_worktree_path(&mut self) -> Option<String> {
         self.selected_index.and_then(|index| {
             self.filtered_items()
                 .get(index)
-                .and_then(|wt| Some(wt.path().to_string()))
+                .map(|wt| wt.path().to_string())
         })
     }
 
-    fn copy_path_of_selected_worktree(&mut self) -> bool {
+    fn copy_path_of_selected_worktree(&mut self) -> eyre::Result<bool> {
         let path = match self.selected_worktree_path() {
             Some(path) => path,
             None => {
                 debug!("No worktree was selected. Nothing to copy to clipboard");
-                return false;
+                return Ok(false);
             }
         };
 
-        let mut clipboard = match Clipboard::new() {
-            Ok(cb) => cb,
-            Err(e) => {
-                error!("Could not access the clipboard: {}", e);
-                return false;
-            }
-        };
+        let mut clipboard = Clipboard::new().wrap_err("Could not access the clipboard")?;
 
-        if let Err(e) = clipboard.set().text(&path) {
-            error!("Could not copy the path {} to clipboard: {}", path, e);
-            return false;
-        }
+        clipboard
+            .set()
+            .text(&path)
+            .wrap_err_with(|| format!("Could not copy path to clipboard: {}", path))?;
 
         debug!("Copied the path {} to clipboard", path);
-        true
+        Ok(true)
     }
 }
 
