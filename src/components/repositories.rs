@@ -1,3 +1,8 @@
+use nucleo_matcher::{
+    pattern::{CaseMatching, Normalization, Pattern},
+    Config, Matcher, Utf32Str,
+};
+
 use super::list::ItemOrder;
 use crate::git::Repository;
 use ratatui::{
@@ -124,18 +129,26 @@ impl From<&Repository> for ListItem<'_> {
 
 impl ListComponent<Repository> for RepositoriesComponent {
     fn filtered_items(&mut self) -> Vec<&Repository> {
-        let mut filtered_repositories = self
+        let query = self.filter.value.as_str();
+        if query.is_empty() {
+            let mut items: Vec<&Repository> = self.repositories.iter().collect();
+            items.sort_by_key(|a| a.name());
+            return items;
+        }
+        let mut matcher = Matcher::new(Config::DEFAULT);
+        let pattern = Pattern::parse(query, CaseMatching::Ignore, Normalization::Smart);
+        let mut buf = Vec::new();
+        let mut scored: Vec<(&Repository, u32)> = self
             .repositories
             .iter()
-            .filter(|repository| repository.name().contains(self.filter.value.as_str()))
-            .collect::<Vec<&Repository>>();
-
-        filtered_repositories.sort_by(|r1, r2| {
-            let r2_name = r2.name();
-            r1.name().cmp(&r2_name)
-        });
-
-        filtered_repositories
+            .filter_map(|r| {
+                pattern
+                    .score(Utf32Str::new(&r.name(), &mut buf), &mut matcher)
+                    .map(|s| (r, s))
+            })
+            .collect();
+        scored.sort_by(|a, b| b.1.cmp(&a.1));
+        scored.into_iter().map(|(r, _)| r).collect()
     }
 
     fn get_state(&mut self) -> &mut ListState {

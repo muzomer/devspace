@@ -2,6 +2,10 @@ use crate::git;
 use arboard::Clipboard;
 use color_eyre::eyre;
 use color_eyre::eyre::WrapErr;
+use nucleo_matcher::{
+    pattern::{CaseMatching, Normalization, Pattern},
+    Config, Matcher, Utf32Str,
+};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
@@ -260,14 +264,26 @@ fn worktree_to_list_item(has_remote: bool, path: &str, worktrees_dir: &str) -> L
 
 impl ListComponent<git::Worktree> for WorktreesComponent {
     fn filtered_items(&mut self) -> Vec<&git::Worktree> {
-        let mut filtered_worktrees = self
+        let query = self.filter.value.as_str();
+        if query.is_empty() {
+            let mut items: Vec<&git::Worktree> = self.worktrees.iter().collect();
+            items.sort_by(|a, b| a.path().cmp(b.path()));
+            return items;
+        }
+        let mut matcher = Matcher::new(Config::DEFAULT);
+        let pattern = Pattern::parse(query, CaseMatching::Ignore, Normalization::Smart);
+        let mut buf = Vec::new();
+        let mut scored: Vec<(&git::Worktree, u32)> = self
             .worktrees
             .iter()
-            .filter(|worktree| worktree.path().contains(self.filter.value.as_str()))
-            .collect::<Vec<&git::Worktree>>();
-
-        filtered_worktrees.sort_by(|w1, w2| w1.path().cmp(w2.path()));
-        filtered_worktrees
+            .filter_map(|wt| {
+                pattern
+                    .score(Utf32Str::new(wt.path(), &mut buf), &mut matcher)
+                    .map(|s| (wt, s))
+            })
+            .collect();
+        scored.sort_by(|a, b| b.1.cmp(&a.1));
+        scored.into_iter().map(|(wt, _)| wt).collect()
     }
 
     fn get_state(&mut self) -> &mut ListState {
