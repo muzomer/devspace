@@ -24,6 +24,7 @@ impl FilterComponent {
         let input = Paragraph::new(self.value.as_str()).block(
             Block::bordered()
                 .border_type(BorderType::Rounded)
+                .border_style(super::BORDER_STYLE)
                 .title(self.title.as_str())
                 .style(Style::new().white().bold()),
         );

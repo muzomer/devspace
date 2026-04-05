@@ -20,6 +20,7 @@ impl ConfirmComponent {
         frame.render_widget(Clear, area);
         Block::bordered()
             .border_type(BorderType::Rounded)
+            .border_style(super::BORDER_STYLE)
             .title(" Delete Worktree ")
             .bold()
             .title_alignment(Alignment::Center)

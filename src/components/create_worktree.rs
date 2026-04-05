@@ -24,6 +24,7 @@ impl CreateWorktreeComponent {
         frame.render_widget(Clear, area);
         Block::bordered()
             .border_type(BorderType::Rounded)
+            .border_style(super::BORDER_STYLE)
             .title(" New Worktree ")
             .bold()
             .title_alignment(Alignment::Center)
@@ -42,6 +43,7 @@ impl CreateWorktreeComponent {
             .block(
                 Block::bordered()
                     .border_type(BorderType::Rounded)
+                    .border_style(super::BORDER_STYLE)
                     .padding(Padding::horizontal(1)),
             )
             .render(input_area, frame.buffer_mut());

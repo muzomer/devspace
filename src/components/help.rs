@@ -37,6 +37,7 @@ impl HelpComponent {
 
         let block = Block::bordered()
             .border_type(BorderType::Rounded)
+            .border_style(super::BORDER_STYLE)
             .title(" Keybindings ")
             .bold()
             .title_alignment(Alignment::Center);

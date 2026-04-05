@@ -47,6 +47,7 @@ impl WorktreesComponent {
         };
         let block = Block::bordered()
             .border_type(ratatui::widgets::BorderType::Rounded)
+            .border_style(super::BORDER_STYLE)
             .title_bottom(match &self.last_error {
                 Some(err) => Line::from(format!(" {} ", err)).red().bold(),
                 None => mode_indicator,

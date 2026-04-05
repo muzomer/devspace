@@ -41,6 +41,7 @@ impl RepositoriesComponent {
             .block(
                 Block::bordered()
                     .border_type(BorderType::Rounded)
+                    .border_style(super::BORDER_STYLE)
                     .title_alignment(Alignment::Center),
             )
             .style(Style::new().white())
