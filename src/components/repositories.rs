@@ -138,7 +138,7 @@ impl ListComponent<Repository> for RepositoriesComponent {
         let mut matcher = Matcher::new(Config::DEFAULT);
         let pattern = Pattern::parse(query, CaseMatching::Ignore, Normalization::Smart);
         let mut buf = Vec::new();
-        let min_score: u32 = 50;
+        let min_score: u32 = 70;
         let mut scored: Vec<(&Repository, u32)> = self
             .repositories
             .iter()

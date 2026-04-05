@@ -277,7 +277,7 @@ impl ListComponent<git::Worktree> for WorktreesComponent {
         // Minimum score to exclude incidental character-scatter matches.
         // A direct substring hit scores ~90+; scattered chars across a long
         // display string score ~20-40 due to gap penalties.
-        let min_score: u32 = 50;
+        let min_score: u32 = 70;
         let mut scored: Vec<(&git::Worktree, u32)> = self
             .worktrees
             .iter()
