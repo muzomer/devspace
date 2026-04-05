@@ -51,6 +51,8 @@ fn resolve_insert(key: KeyEvent) -> Option<Action> {
     if key.modifiers == KeyModifiers::CONTROL {
         return match key.code {
             KeyCode::Char('c') => Some(Action::Quit),
+            KeyCode::Char('j') => Some(Action::MoveDown),
+            KeyCode::Char('k') => Some(Action::MoveUp),
             _ => None,
         };
     }

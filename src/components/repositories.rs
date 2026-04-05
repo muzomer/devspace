@@ -85,6 +85,10 @@ impl RepositoriesComponent {
         self.focus = Focus::Filter;
     }
 
+    pub fn focus_list(&mut self) {
+        self.focus = Focus::List;
+    }
+
     pub fn toggle_focus(&mut self) {
         self.focus = match self.focus {
             Focus::Filter => Focus::List,

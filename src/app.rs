@@ -141,9 +141,14 @@ impl App {
                 self.mode = InputMode::Insert;
                 EventState::Consumed
             }
-            Action::ClosePopup | Action::ExitInsertMode => {
+            Action::ClosePopup => {
                 self.focus = Focus::Worktrees;
                 self.mode = InputMode::Normal;
+                EventState::Consumed
+            }
+            Action::ExitInsertMode => {
+                self.mode = InputMode::Normal;
+                self.repositories_component.focus_list();
                 EventState::Consumed
             }
             Action::FocusNext => {
