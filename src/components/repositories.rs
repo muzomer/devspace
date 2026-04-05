@@ -36,7 +36,8 @@ impl RepositoriesComponent {
         f.render_widget(Clear, rect);
         let [filter_area, repos_list_area] =
             Layout::vertical([Constraint::Length(3), Constraint::Min(1)]).areas(rect);
-        self.filter.draw(f, filter_area);
+        self.filter
+            .draw(f, filter_area, matches!(self.focus, Focus::Filter));
         let list = List::new(self.filtered_items())
             .block(
                 Block::bordered()

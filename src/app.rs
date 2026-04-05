@@ -42,7 +42,7 @@ impl App {
         let worktrees = git::worktrees_of_repositories(&repositories);
 
         let repositories_component = RepositoriesComponent::new(repositories);
-        let worktrees_component = WorktreesComponent::new(worktrees);
+        let worktrees_component = WorktreesComponent::new(worktrees, args.worktrees_dir.clone());
         Self {
             worktrees_component,
             repositories_component,
@@ -61,7 +61,12 @@ impl App {
             .constraints([Constraint::Percentage(100)])
             .areas(frame.area());
 
-        self.worktrees_component.draw(frame, full_area, self.mode);
+        self.worktrees_component.draw(
+            frame,
+            full_area,
+            self.mode,
+            matches!(self.focus, Focus::Worktrees),
+        );
 
         if let Focus::Repositories = self.focus {
             let popup_area = self.popup_area(full_area, 50, 50);

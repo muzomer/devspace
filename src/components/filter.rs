@@ -1,6 +1,6 @@
 use ratatui::{
     layout::Rect,
-    style::{Style, Stylize},
+    style::{Color, Style, Stylize},
     widgets::{Block, BorderType, Paragraph},
     Frame,
 };
@@ -20,11 +20,16 @@ impl FilterComponent {
         }
     }
 
-    pub fn draw(&mut self, f: &mut Frame, rect: Rect) {
+    pub fn draw(&mut self, f: &mut Frame, rect: Rect, is_active: bool) {
+        let border_style = if is_active {
+            Style::new().fg(Color::Yellow)
+        } else {
+            super::BORDER_STYLE
+        };
         let input = Paragraph::new(self.value.as_str()).block(
             Block::bordered()
                 .border_type(BorderType::Rounded)
-                .border_style(super::BORDER_STYLE)
+                .border_style(border_style)
                 .title(self.title.as_str())
                 .style(Style::new().white().bold()),
         );

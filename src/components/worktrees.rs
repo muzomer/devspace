@@ -4,9 +4,12 @@ use color_eyre::eyre;
 use color_eyre::eyre::WrapErr;
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::{Color, Style, Stylize},
+    style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, List, ListItem, ListState, StatefulWidget},
+    widgets::{
+        Block, List, ListItem, ListState, Scrollbar, ScrollbarOrientation, ScrollbarState,
+        StatefulWidget,
+    },
     Frame,
 };
 use tracing::debug;
@@ -25,45 +28,83 @@ pub struct WorktreesComponent {
     focus: Focus,
     selected_index: Option<usize>,
     pub last_error: Option<String>,
+    worktrees_dir: String,
 }
 
 impl WorktreesComponent {
-    pub fn new(worktrees: Vec<git::Worktree>) -> WorktreesComponent {
+    pub fn new(worktrees: Vec<git::Worktree>, worktrees_dir: String) -> WorktreesComponent {
         let selected_index = if worktrees.is_empty() { None } else { Some(0) };
         Self {
             filter: FilterComponent::new(" Filter Worktrees ".to_string()),
             state: ListState::default().with_selected(selected_index),
             focus: Focus::Filter,
             selected_index,
+            worktrees_dir: worktrees_dir.trim_end_matches('/').to_string(),
             worktrees,
             last_error: None,
         }
     }
 
-    pub fn draw(&mut self, f: &mut Frame, rect: Rect, mode: InputMode) {
+    pub fn draw(&mut self, f: &mut Frame, rect: Rect, mode: InputMode, is_active: bool) {
+        let worktrees_dir = self.worktrees_dir.clone();
+
+        // Collect (has_remote, path) as owned data so the mutable borrow from
+        // filtered_items() fully ends before we access other fields of self.
+        let display_data: Vec<(bool, String)> = {
+            let filtered = self.filtered_items();
+            filtered
+                .iter()
+                .map(|wt| (wt.has_remote_branch, wt.path().to_string()))
+                .collect()
+        };
+        let total = display_data.len();
+        let items: Vec<ListItem<'static>> = display_data
+            .iter()
+            .map(|(has_remote, path)| worktree_to_list_item(*has_remote, path, &worktrees_dir))
+            .collect();
+
+        let current = self.selected_index.map(|i| i + 1).unwrap_or(0);
+
         let mode_indicator = match mode {
             InputMode::Normal => Line::from(" NORMAL ").cyan().bold(),
             InputMode::Insert => Line::from(" INSERT ").yellow().bold(),
         };
-        let block = Block::bordered()
+
+        let bottom_left = match &self.last_error {
+            Some(err) => Line::from(format!(" {} ", err)).red().bold(),
+            None => mode_indicator,
+        };
+
+        let mut block = Block::bordered()
             .border_type(ratatui::widgets::BorderType::Rounded)
             .border_style(super::BORDER_STYLE)
-            .title_bottom(match &self.last_error {
-                Some(err) => Line::from(format!(" {} ", err)).red().bold(),
-                None => mode_indicator,
-            });
+            .title(format!(" Worktrees ({}/{}) ", current, total))
+            .title_bottom(bottom_left);
+
+        if matches!(mode, InputMode::Normal) {
+            block = block.title_bottom(Line::from(" ? help ").dark_gray().right_aligned());
+        }
+
         let [filter_area, list_area] =
             Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(rect);
 
-        self.filter.draw(f, filter_area);
+        self.filter.draw(
+            f,
+            filter_area,
+            is_active && matches!(mode, InputMode::Insert) && matches!(self.focus, Focus::Filter),
+        );
 
-        let list = List::new(self.filtered_items())
+        let list = List::new(items)
             .block(block)
             .style(Style::new().white())
             .highlight_style(SELECTED_STYLE)
             .direction(ratatui::widgets::ListDirection::TopToBottom);
 
         StatefulWidget::render(list, list_area, f.buffer_mut(), &mut self.state);
+
+        let mut scroll_state = ScrollbarState::new(total).position(self.state.offset());
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight);
+        f.render_stateful_widget(scrollbar, list_area, &mut scroll_state);
     }
 
     pub fn handle_action(&mut self, action: Action) -> EventState {
@@ -179,20 +220,42 @@ impl WorktreesComponent {
     }
 }
 
-impl From<&git::Worktree> for ListItem<'_> {
-    fn from(value: &git::Worktree) -> Self {
-        let (remote_indicator, color) = if value.has_remote_branch {
-            ("✓", Color::Green)
-        } else {
-            ("✗", Color::Red)
-        };
+fn worktree_to_list_item(has_remote: bool, path: &str, worktrees_dir: &str) -> ListItem<'static> {
+    let (remote_indicator, indicator_color) = if has_remote {
+        ("✓", Color::Green)
+    } else {
+        ("✗", Color::Red)
+    };
 
-        let indicator_span =
-            Span::styled(format!("{} ", remote_indicator), Style::default().fg(color));
-        let path_span = Span::from(value.path().to_string());
+    let indicator_span = Span::styled(
+        format!("{} ", remote_indicator),
+        Style::default().fg(indicator_color),
+    );
 
-        ListItem::new(Line::from(vec![indicator_span, path_span]))
-    }
+    let path = path.trim_end_matches('/');
+    let relative = path
+        .strip_prefix(worktrees_dir)
+        .unwrap_or(path)
+        .trim_start_matches('/');
+
+    let line = if let Some(sep) = relative.find('/') {
+        let repo = &relative[..sep];
+        let branch = relative[sep + 1..].trim_end_matches('/');
+        let repo_span = Span::styled(repo.to_string(), Style::default().fg(Color::DarkGray));
+        let sep_span = Span::styled(" / ", Style::default().fg(Color::DarkGray));
+        let branch_span = Span::styled(
+            branch.to_string(),
+            Style::default()
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD),
+        );
+        Line::from(vec![indicator_span, repo_span, sep_span, branch_span])
+    } else {
+        let path_span = Span::from(relative.to_string());
+        Line::from(vec![indicator_span, path_span])
+    };
+
+    ListItem::new(line)
 }
 
 impl ListComponent<git::Worktree> for WorktreesComponent {
