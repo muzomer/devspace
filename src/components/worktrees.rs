@@ -270,15 +270,26 @@ impl ListComponent<git::Worktree> for WorktreesComponent {
             items.sort_by(|a, b| a.path().cmp(b.path()));
             return items;
         }
+        let worktrees_dir = self.worktrees_dir.as_str();
         let mut matcher = Matcher::new(Config::DEFAULT);
         let pattern = Pattern::parse(query, CaseMatching::Ignore, Normalization::Smart);
         let mut buf = Vec::new();
+        // Minimum score to exclude incidental character-scatter matches.
+        // A direct substring hit scores ~90+; scattered chars across a long
+        // display string score ~20-40 due to gap penalties.
+        let min_score: u32 = 50;
         let mut scored: Vec<(&git::Worktree, u32)> = self
             .worktrees
             .iter()
             .filter_map(|wt| {
+                let path = wt.path().trim_end_matches('/');
+                let display = path
+                    .strip_prefix(worktrees_dir)
+                    .unwrap_or(path)
+                    .trim_start_matches('/');
                 pattern
-                    .score(Utf32Str::new(wt.path(), &mut buf), &mut matcher)
+                    .score(Utf32Str::new(display, &mut buf), &mut matcher)
+                    .filter(|&s| s >= min_score)
                     .map(|s| (wt, s))
             })
             .collect();
