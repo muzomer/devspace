@@ -273,8 +273,8 @@ impl App {
             (Focus::Worktrees, InputMode::Insert) => vec![
                 ("Esc", "Exit filter mode"),
                 ("Tab", "Toggle filter / list"),
-                ("↑ / Ctrl+K", "Move up in list"),
-                ("↓ / Ctrl+J", "Move down in list"),
+                ("↑ / Ctrl+K / Ctrl+P", "Move up in list"),
+                ("↓ / Ctrl+J / Ctrl+N", "Move down in list"),
                 ("Backspace", "Delete filter character"),
                 ("Enter", "Copy path to clipboard & exit"),
                 ("Ctrl+C", "Quit"),
@@ -294,8 +294,8 @@ impl App {
             (Focus::Repositories, InputMode::Insert) => vec![
                 ("Esc", "Exit filter mode"),
                 ("Tab", "Toggle filter / list"),
-                ("↑ / Ctrl+K", "Move up in list"),
-                ("↓ / Ctrl+J", "Move down in list"),
+                ("↑ / Ctrl+K / Ctrl+P", "Move up in list"),
+                ("↓ / Ctrl+J / Ctrl+N", "Move down in list"),
                 ("Backspace", "Delete filter character"),
                 ("Enter", "Select repository"),
                 ("Ctrl+C", "Quit"),
