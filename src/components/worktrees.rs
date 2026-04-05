@@ -2,7 +2,6 @@ use crate::git;
 use arboard::Clipboard;
 use color_eyre::eyre;
 use color_eyre::eyre::WrapErr;
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Color, Style, Stylize},
@@ -12,11 +11,12 @@ use ratatui::{
 };
 use tracing::debug;
 
-use super::{filter::FilterComponent, EventState};
+use super::{filter::FilterComponent, Action, EventState};
 use super::{
     list::{Focus, ItemOrder, ListComponent},
     SELECTED_STYLE,
 };
+use crate::keymap::InputMode;
 
 pub struct WorktreesComponent {
     worktrees: Vec<git::Worktree>,
@@ -40,12 +40,16 @@ impl WorktreesComponent {
         }
     }
 
-    pub fn draw(&mut self, f: &mut Frame, rect: Rect) {
+    pub fn draw(&mut self, f: &mut Frame, rect: Rect, mode: InputMode) {
+        let mode_indicator = match mode {
+            InputMode::Normal => Line::from(" NORMAL ").cyan().bold(),
+            InputMode::Insert => Line::from(" INSERT ").yellow().bold(),
+        };
         let block = Block::bordered()
             .border_type(ratatui::widgets::BorderType::Rounded)
             .title_bottom(match &self.last_error {
                 Some(err) => Line::from(format!(" {} ", err)).red().bold(),
-                None => Line::default(),
+                None => mode_indicator,
             });
         let [filter_area, list_area] =
             Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(rect);
@@ -61,65 +65,67 @@ impl WorktreesComponent {
         StatefulWidget::render(list, list_area, f.buffer_mut(), &mut self.state);
     }
 
-    pub fn handle_key(&mut self, key: KeyEvent) -> EventState {
-        match self.focus {
-            Focus::Filter => {
-                let result = self.filter.handle_key(key);
-                if result == EventState::Consumed {
-                    return result;
-                }
-
-                match (key.code, key.modifiers) {
-                    (KeyCode::Char('n'), KeyModifiers::CONTROL)
-                    | (KeyCode::Down, KeyModifiers::NONE) => {
-                        self.select(ItemOrder::Next);
-                        EventState::Consumed
-                    }
-                    (KeyCode::Char('p'), KeyModifiers::CONTROL)
-                    | (KeyCode::Up, KeyModifiers::NONE) => {
-                        self.select(ItemOrder::Previous);
-                        EventState::Consumed
-                    }
-                    (KeyCode::Tab, KeyModifiers::NONE) => {
-                        self.focus = Focus::List;
-                        EventState::Consumed
-                    }
-                    (KeyCode::Enter, KeyModifiers::NONE) => {
-                        match self.copy_path_of_selected_worktree() {
-                            Ok(true) => {
-                                debug!("copied path of selected worktree");
-                                self.last_error = None;
-                                return EventState::Exit;
-                            }
-                            Ok(false) => {}
-                            Err(e) => self.last_error = Some(format!("{:#}", e)),
-                        }
-                        EventState::Consumed
-                    }
-
-                    _ => EventState::NotConsumed,
-                }
-            }
-            Focus::List => {
-                match key.code {
-                    KeyCode::Char('j') | KeyCode::Down => self.select(ItemOrder::Next),
-                    KeyCode::Char('k') | KeyCode::Up => self.select(ItemOrder::Previous),
-                    KeyCode::Char('g') | KeyCode::Home => self.select(ItemOrder::First),
-                    KeyCode::Char('G') | KeyCode::End => self.select(ItemOrder::Last),
-                    KeyCode::Tab => self.focus = Focus::Filter,
-                    KeyCode::Enter => match self.copy_path_of_selected_worktree() {
-                        Ok(true) => {
-                            self.last_error = None;
-                            return EventState::Exit;
-                        }
-                        Ok(false) => {}
-                        Err(e) => self.last_error = Some(format!("{:#}", e)),
-                    },
-                    _ => return EventState::NotConsumed,
-                }
+    pub fn handle_action(&mut self, action: Action) -> EventState {
+        match action {
+            Action::MoveDown => {
+                self.select(ItemOrder::Next);
                 EventState::Consumed
             }
+            Action::MoveUp => {
+                self.select(ItemOrder::Previous);
+                EventState::Consumed
+            }
+            Action::GoFirst => {
+                self.select(ItemOrder::First);
+                EventState::Consumed
+            }
+            Action::GoLast => {
+                self.select(ItemOrder::Last);
+                EventState::Consumed
+            }
+            Action::Select => {
+                match self.copy_path_of_selected_worktree() {
+                    Ok(true) => {
+                        debug!("copied path of selected worktree");
+                        self.last_error = None;
+                        EventState::Exit
+                    }
+                    Ok(false) => EventState::Consumed,
+                    Err(e) => {
+                        self.last_error = Some(format!("{:#}", e));
+                        EventState::Consumed
+                    }
+                }
+            }
+            Action::InsertChar(c) => {
+                self.filter.enter_char(c);
+                EventState::Consumed
+            }
+            Action::DeleteChar => {
+                self.filter.delete_char();
+                EventState::Consumed
+            }
+            _ => EventState::NotConsumed,
         }
+    }
+
+    pub fn focus_filter(&mut self) {
+        self.focus = Focus::Filter;
+    }
+
+    pub fn focus_list(&mut self) {
+        self.focus = Focus::List;
+    }
+
+    pub fn toggle_focus(&mut self) {
+        self.focus = match self.focus {
+            Focus::Filter => Focus::List,
+            Focus::List => Focus::Filter,
+        };
+    }
+
+    pub fn is_filter_focused(&self) -> bool {
+        matches!(self.focus, Focus::Filter)
     }
 
     pub fn add(&mut self, new_worktree: git::Worktree) {

@@ -1,0 +1,63 @@
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+
+use crate::components::Action;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum InputMode {
+    Normal,
+    Insert,
+}
+
+pub fn resolve(mode: InputMode, key: KeyEvent) -> Option<Action> {
+    match mode {
+        InputMode::Normal => resolve_normal(key),
+        InputMode::Insert => resolve_insert(key),
+    }
+}
+
+fn resolve_normal(key: KeyEvent) -> Option<Action> {
+    match (key.code, key.modifiers) {
+        (KeyCode::Char('j'), KeyModifiers::NONE) | (KeyCode::Down, KeyModifiers::NONE) => {
+            Some(Action::MoveDown)
+        }
+        (KeyCode::Char('k'), KeyModifiers::NONE) | (KeyCode::Up, KeyModifiers::NONE) => {
+            Some(Action::MoveUp)
+        }
+        (KeyCode::Char('g'), KeyModifiers::NONE) | (KeyCode::Home, KeyModifiers::NONE) => {
+            Some(Action::GoFirst)
+        }
+        (KeyCode::Char('G'), KeyModifiers::NONE) | (KeyCode::End, KeyModifiers::NONE) => {
+            Some(Action::GoLast)
+        }
+        (KeyCode::Enter, KeyModifiers::NONE) => Some(Action::Select),
+        (KeyCode::Char('x'), KeyModifiers::NONE) => Some(Action::Delete),
+        (KeyCode::Char('d'), KeyModifiers::NONE) => Some(Action::OpenRepositories),
+        (KeyCode::Esc, KeyModifiers::NONE) => Some(Action::ClosePopup),
+        (KeyCode::Char('/'), KeyModifiers::NONE) | (KeyCode::Char('i'), KeyModifiers::NONE) => {
+            Some(Action::EnterInsertMode)
+        }
+        (KeyCode::Tab, KeyModifiers::NONE) => Some(Action::FocusNext),
+        (KeyCode::Char('q'), KeyModifiers::NONE) => Some(Action::Quit),
+        (KeyCode::Char('c'), KeyModifiers::CONTROL) => Some(Action::Quit),
+        _ => None,
+    }
+}
+
+fn resolve_insert(key: KeyEvent) -> Option<Action> {
+    if key.modifiers == KeyModifiers::CONTROL {
+        return match key.code {
+            KeyCode::Char('c') => Some(Action::Quit),
+            _ => None,
+        };
+    }
+    match key.code {
+        KeyCode::Esc => Some(Action::ExitInsertMode),
+        KeyCode::Enter => Some(Action::Select),
+        KeyCode::Tab => Some(Action::FocusNext),
+        KeyCode::Backspace => Some(Action::DeleteChar),
+        KeyCode::Char(c) => Some(Action::InsertChar(c)),
+        KeyCode::Down => Some(Action::MoveDown),
+        KeyCode::Up => Some(Action::MoveUp),
+        _ => None,
+    }
+}

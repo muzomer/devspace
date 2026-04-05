@@ -1,4 +1,4 @@
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::KeyEvent;
 use ratatui::{
     layout::{Constraint, Flex, Layout, Rect},
     Frame,
@@ -6,8 +6,9 @@ use ratatui::{
 
 use crate::{
     cli,
-    components::{CreateWorktreeComponent, EventState, RepositoriesComponent, WorktreesComponent},
+    components::{Action, CreateWorktreeComponent, EventState, RepositoriesComponent, WorktreesComponent},
     git,
+    keymap::{self, InputMode},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -23,6 +24,7 @@ pub struct App {
     create_worktree: CreateWorktreeComponent,
     args: cli::Args,
     focus: Focus,
+    mode: InputMode,
 }
 
 impl App {
@@ -39,6 +41,7 @@ impl App {
             create_worktree: CreateWorktreeComponent::new(),
             focus: Focus::Worktrees,
             args,
+            mode: InputMode::Normal,
         }
     }
 
@@ -47,7 +50,7 @@ impl App {
             .constraints([Constraint::Percentage(100)])
             .areas(frame.area());
 
-        self.worktrees_component.draw(frame, full_area);
+        self.worktrees_component.draw(frame, full_area, self.mode);
 
         if let Focus::Repositories = self.focus {
             let popup_area = self.popup_area(full_area, 50, 50);
@@ -61,87 +64,120 @@ impl App {
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) -> EventState {
-        let result = match self.focus {
-            Focus::Worktrees => {
-                let result = self.worktrees_component.handle_key(key);
-                if result == EventState::Consumed || result == EventState::Exit {
-                    result
-                } else {
-                    match (key.code, key.modifiers) {
-                        (KeyCode::Char('d'), KeyModifiers::CONTROL) => {
-                            self.focus = Focus::Repositories;
-                            EventState::Consumed
-                        }
-                        (KeyCode::Char('x'), KeyModifiers::CONTROL) => {
-                            match self.worktrees_component.delete_selected_worktree() {
-                                Ok(()) => self.worktrees_component.last_error = None,
-                                Err(e) => self.worktrees_component.last_error = Some(format!("{:#}", e)),
-                            }
-                            EventState::Consumed
-                        }
-                        _ => EventState::NotConsumed,
-                    }
-                }
-            }
-            Focus::Repositories => {
-                let result = self.repositories_component.handle_key(key);
-                if result == EventState::Consumed {
-                    result
-                } else {
-                    match (key.code, key.modifiers) {
-                        (KeyCode::Char('d'), KeyModifiers::CONTROL)
-                        | (KeyCode::Enter, KeyModifiers::NONE) => {
-                            self.create_worktree = CreateWorktreeComponent::new();
-                            self.focus = Focus::CreateWorktree;
-                        }
-                        _ => self.focus = Focus::Worktrees,
-                    };
-                    EventState::Consumed
-                }
-            }
-
-            Focus::CreateWorktree => {
-                let result = self.create_worktree.handle_key(key);
-                if result == EventState::Consumed {
-                    result
-                } else {
-                    if key.code == KeyCode::Enter
-                        && !self.create_worktree.new_worktree_name.is_empty()
-                    {
-                        if let Some(selected_repository) =
-                            self.repositories_component.selected_repository()
-                        {
-                            match selected_repository.create_new_worktree(
-                                &self.create_worktree.new_worktree_name,
-                                &self.args.worktrees_dir,
-                            ) {
-                                Ok(created_worktree) => {
-                                    self.worktrees_component.last_error = None;
-                                    self.worktrees_component.add(created_worktree);
-                                }
-                                Err(e) => {
-                                    self.worktrees_component.last_error = Some(format!("{:#}", e));
-                                }
-                            }
-                        }
-                    }
-                    self.focus = Focus::Worktrees;
-                    EventState::Consumed
-                }
-            }
+        let action = match keymap::resolve(self.mode, key) {
+            Some(action) => action,
+            None => return EventState::NotConsumed,
         };
 
-        if result == EventState::NotConsumed {
-            return match (key.code, key.modifiers) {
-                (KeyCode::Char('c'), KeyModifiers::CONTROL)
-                | (KeyCode::Char('q'), KeyModifiers::CONTROL)
-                | (KeyCode::Char('w'), KeyModifiers::CONTROL)
-                | (KeyCode::Esc, KeyModifiers::NONE) => EventState::Exit,
-                _ => result,
-            };
+        match self.focus {
+            Focus::Worktrees => self.handle_worktrees_action(action),
+            Focus::Repositories => self.handle_repositories_action(action),
+            Focus::CreateWorktree => self.handle_create_worktree_action(action),
         }
+    }
 
-        result
+    fn handle_worktrees_action(&mut self, action: Action) -> EventState {
+        match action {
+            Action::Quit => EventState::Exit,
+            Action::OpenRepositories => {
+                self.focus = Focus::Repositories;
+                EventState::Consumed
+            }
+            Action::Delete => {
+                match self.worktrees_component.delete_selected_worktree() {
+                    Ok(()) => self.worktrees_component.last_error = None,
+                    Err(e) => self.worktrees_component.last_error = Some(format!("{:#}", e)),
+                }
+                EventState::Consumed
+            }
+            Action::EnterInsertMode => {
+                self.mode = InputMode::Insert;
+                self.worktrees_component.focus_filter();
+                EventState::Consumed
+            }
+            Action::ExitInsertMode => {
+                self.mode = InputMode::Normal;
+                self.worktrees_component.focus_list();
+                EventState::Consumed
+            }
+            Action::FocusNext => {
+                self.worktrees_component.toggle_focus();
+                self.mode = if self.worktrees_component.is_filter_focused() {
+                    InputMode::Insert
+                } else {
+                    InputMode::Normal
+                };
+                EventState::Consumed
+            }
+            _ => self.worktrees_component.handle_action(action),
+        }
+    }
+
+    fn handle_repositories_action(&mut self, action: Action) -> EventState {
+        match action {
+            Action::Quit => EventState::Exit,
+            Action::Select => {
+                self.create_worktree = CreateWorktreeComponent::new();
+                self.focus = Focus::CreateWorktree;
+                self.mode = InputMode::Insert;
+                EventState::Consumed
+            }
+            Action::ClosePopup | Action::ExitInsertMode => {
+                self.focus = Focus::Worktrees;
+                self.mode = InputMode::Normal;
+                EventState::Consumed
+            }
+            Action::FocusNext => {
+                self.repositories_component.toggle_focus();
+                self.mode = if self.repositories_component.is_filter_focused() {
+                    InputMode::Insert
+                } else {
+                    InputMode::Normal
+                };
+                EventState::Consumed
+            }
+            Action::EnterInsertMode => {
+                self.mode = InputMode::Insert;
+                self.repositories_component.focus_filter();
+                EventState::Consumed
+            }
+            _ => self.repositories_component.handle_action(action),
+        }
+    }
+
+    fn handle_create_worktree_action(&mut self, action: Action) -> EventState {
+        match action {
+            Action::Quit => EventState::Exit,
+            Action::Select => {
+                if !self.create_worktree.new_worktree_name.is_empty() {
+                    if let Some(selected_repository) =
+                        self.repositories_component.selected_repository()
+                    {
+                        match selected_repository.create_new_worktree(
+                            &self.create_worktree.new_worktree_name,
+                            &self.args.worktrees_dir,
+                        ) {
+                            Ok(created_worktree) => {
+                                self.worktrees_component.last_error = None;
+                                self.worktrees_component.add(created_worktree);
+                            }
+                            Err(e) => {
+                                self.worktrees_component.last_error = Some(format!("{:#}", e));
+                            }
+                        }
+                    }
+                }
+                self.focus = Focus::Worktrees;
+                self.mode = InputMode::Normal;
+                EventState::Consumed
+            }
+            Action::ClosePopup | Action::ExitInsertMode => {
+                self.focus = Focus::Worktrees;
+                self.mode = InputMode::Normal;
+                EventState::Consumed
+            }
+            _ => self.create_worktree.handle_action(action),
+        }
     }
 
     fn popup_area(&self, area: Rect, percent_x: u16, percent_y: u16) -> Rect {

@@ -17,3 +17,21 @@ pub enum EventState {
     NotConsumed,
     Exit,
 }
+
+#[derive(PartialEq, Debug)]
+pub enum Action {
+    MoveDown,
+    MoveUp,
+    GoFirst,
+    GoLast,
+    Select,
+    Delete,
+    OpenRepositories,
+    ClosePopup,
+    EnterInsertMode,
+    ExitInsertMode,
+    InsertChar(char),
+    DeleteChar,
+    FocusNext,
+    Quit,
+}

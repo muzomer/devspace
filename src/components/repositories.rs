@@ -1,6 +1,5 @@
 use super::list::ItemOrder;
 use crate::git::Repository;
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
     style::{Style, Stylize},
@@ -11,7 +10,7 @@ use ratatui::{
 use super::{
     filter::FilterComponent,
     list::{Focus, ListComponent},
-    EventState, SELECTED_STYLE,
+    Action, EventState, SELECTED_STYLE,
 };
 
 pub struct RepositoriesComponent {
@@ -50,45 +49,51 @@ impl RepositoriesComponent {
         StatefulWidget::render(list, repos_list_area, f.buffer_mut(), &mut self.state);
     }
 
-    pub fn handle_key(&mut self, key: KeyEvent) -> EventState {
-        match self.focus {
-            Focus::Filter => {
-                let result = self.filter.handle_key(key);
-                if result == EventState::Consumed {
-                    self.select(ItemOrder::First);
-                    result
-                } else {
-                    if key.modifiers == KeyModifiers::CONTROL {
-                        match key.code {
-                            KeyCode::Char('n') => {
-                                self.select(ItemOrder::Next);
-                            }
-                            KeyCode::Char('p') => {
-                                self.select(ItemOrder::Previous);
-                            }
-                            _ => return EventState::NotConsumed,
-                        }
-                    } else {
-                        match key.code {
-                            KeyCode::Tab => self.focus = Focus::List,
-                            _ => return EventState::NotConsumed,
-                        }
-                    }
-                    EventState::Consumed
-                }
-            }
-            Focus::List => {
-                match key.code {
-                    KeyCode::Char('j') | KeyCode::Down => self.select(ItemOrder::Next),
-                    KeyCode::Char('k') | KeyCode::Up => self.select(ItemOrder::Previous),
-                    KeyCode::Char('g') | KeyCode::Home => self.select(ItemOrder::First),
-                    KeyCode::Char('G') | KeyCode::End => self.select(ItemOrder::Last),
-                    KeyCode::Tab => self.focus = Focus::Filter,
-                    _ => return EventState::NotConsumed,
-                }
+    pub fn handle_action(&mut self, action: Action) -> EventState {
+        match action {
+            Action::MoveDown => {
+                self.select(ItemOrder::Next);
                 EventState::Consumed
             }
+            Action::MoveUp => {
+                self.select(ItemOrder::Previous);
+                EventState::Consumed
+            }
+            Action::GoFirst => {
+                self.select(ItemOrder::First);
+                EventState::Consumed
+            }
+            Action::GoLast => {
+                self.select(ItemOrder::Last);
+                EventState::Consumed
+            }
+            Action::InsertChar(c) => {
+                self.filter.enter_char(c);
+                self.select(ItemOrder::First);
+                EventState::Consumed
+            }
+            Action::DeleteChar => {
+                self.filter.delete_char();
+                self.select(ItemOrder::First);
+                EventState::Consumed
+            }
+            _ => EventState::NotConsumed,
         }
+    }
+
+    pub fn focus_filter(&mut self) {
+        self.focus = Focus::Filter;
+    }
+
+    pub fn toggle_focus(&mut self) {
+        self.focus = match self.focus {
+            Focus::Filter => Focus::List,
+            Focus::List => Focus::Filter,
+        };
+    }
+
+    pub fn is_filter_focused(&self) -> bool {
+        matches!(self.focus, Focus::Filter)
     }
 
     pub fn selected_repository(&mut self) -> Option<&Repository> {
