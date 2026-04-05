@@ -26,12 +26,16 @@ fn resolve_normal(key: KeyEvent) -> Option<Action> {
         (KeyCode::Char('g'), KeyModifiers::NONE) | (KeyCode::Home, KeyModifiers::NONE) => {
             Some(Action::GoFirst)
         }
-        (KeyCode::Char('G'), KeyModifiers::NONE) | (KeyCode::End, KeyModifiers::NONE) => {
-            Some(Action::GoLast)
-        }
+        (KeyCode::Char('G'), KeyModifiers::NONE)
+        | (KeyCode::Char('G'), KeyModifiers::SHIFT)
+        | (KeyCode::End, KeyModifiers::NONE) => Some(Action::GoLast),
         (KeyCode::Enter, KeyModifiers::NONE) => Some(Action::Select),
         (KeyCode::Char('x'), KeyModifiers::NONE) => Some(Action::Delete),
-        (KeyCode::Char('d'), KeyModifiers::NONE) => Some(Action::OpenRepositories),
+        (KeyCode::Char('d'), KeyModifiers::NONE) => Some(Action::DeleteWithConfirmation),
+        (KeyCode::Char('D'), KeyModifiers::NONE) | (KeyCode::Char('D'), KeyModifiers::SHIFT) => {
+            Some(Action::ForceDelete)
+        }
+        (KeyCode::Char('n'), KeyModifiers::NONE) => Some(Action::OpenRepositories),
         (KeyCode::Esc, KeyModifiers::NONE) => Some(Action::ClosePopup),
         (KeyCode::Char('/'), KeyModifiers::NONE) | (KeyCode::Char('i'), KeyModifiers::NONE) => {
             Some(Action::EnterInsertMode)

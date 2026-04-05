@@ -6,7 +6,10 @@ use ratatui::{
 
 use crate::{
     cli,
-    components::{Action, CreateWorktreeComponent, EventState, RepositoriesComponent, WorktreesComponent},
+    components::{
+        Action, ConfirmComponent, CreateWorktreeComponent, EventState, RepositoriesComponent,
+        WorktreesComponent,
+    },
     git,
     keymap::{self, InputMode},
 };
@@ -16,12 +19,14 @@ pub enum Focus {
     Worktrees,
     Repositories,
     CreateWorktree,
+    Confirm,
 }
 
 pub struct App {
     worktrees_component: WorktreesComponent,
     repositories_component: RepositoriesComponent,
     create_worktree: CreateWorktreeComponent,
+    confirm_component: ConfirmComponent,
     args: cli::Args,
     focus: Focus,
     mode: InputMode,
@@ -39,6 +44,7 @@ impl App {
             worktrees_component,
             repositories_component,
             create_worktree: CreateWorktreeComponent::new(),
+            confirm_component: ConfirmComponent::new(String::new()),
             focus: Focus::Worktrees,
             args,
             mode: InputMode::Normal,
@@ -61,6 +67,11 @@ impl App {
             let popup_area = self.popup_area(full_area, 50, 30);
             self.create_worktree.draw(frame, popup_area);
         }
+
+        if let Focus::Confirm = self.focus {
+            let popup_area = self.popup_area(full_area, 60, 30);
+            self.confirm_component.draw(frame, popup_area);
+        }
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) -> EventState {
@@ -73,6 +84,7 @@ impl App {
             Focus::Worktrees => self.handle_worktrees_action(action),
             Focus::Repositories => self.handle_repositories_action(action),
             Focus::CreateWorktree => self.handle_create_worktree_action(action),
+            Focus::Confirm => self.handle_confirm_action(action),
         }
     }
 
@@ -83,10 +95,17 @@ impl App {
                 self.focus = Focus::Repositories;
                 EventState::Consumed
             }
-            Action::Delete => {
+            Action::Delete | Action::ForceDelete => {
                 match self.worktrees_component.delete_selected_worktree() {
                     Ok(()) => self.worktrees_component.last_error = None,
                     Err(e) => self.worktrees_component.last_error = Some(format!("{:#}", e)),
+                }
+                EventState::Consumed
+            }
+            Action::DeleteWithConfirmation => {
+                if let Some(path) = self.worktrees_component.selected_worktree_path() {
+                    self.confirm_component = ConfirmComponent::new(path);
+                    self.focus = Focus::Confirm;
                 }
                 EventState::Consumed
             }
@@ -177,6 +196,25 @@ impl App {
                 EventState::Consumed
             }
             _ => self.create_worktree.handle_action(action),
+        }
+    }
+
+    fn handle_confirm_action(&mut self, action: Action) -> EventState {
+        match action {
+            Action::Quit => EventState::Exit,
+            Action::Select => {
+                match self.worktrees_component.delete_selected_worktree() {
+                    Ok(()) => self.worktrees_component.last_error = None,
+                    Err(e) => self.worktrees_component.last_error = Some(format!("{:#}", e)),
+                }
+                self.focus = Focus::Worktrees;
+                EventState::Consumed
+            }
+            Action::ClosePopup | Action::ExitInsertMode => {
+                self.focus = Focus::Worktrees;
+                EventState::Consumed
+            }
+            _ => self.confirm_component.handle_action(action),
         }
     }
 

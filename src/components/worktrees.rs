@@ -83,20 +83,18 @@ impl WorktreesComponent {
                 self.select(ItemOrder::Last);
                 EventState::Consumed
             }
-            Action::Select => {
-                match self.copy_path_of_selected_worktree() {
-                    Ok(true) => {
-                        debug!("copied path of selected worktree");
-                        self.last_error = None;
-                        EventState::Exit
-                    }
-                    Ok(false) => EventState::Consumed,
-                    Err(e) => {
-                        self.last_error = Some(format!("{:#}", e));
-                        EventState::Consumed
-                    }
+            Action::Select => match self.copy_path_of_selected_worktree() {
+                Ok(true) => {
+                    debug!("copied path of selected worktree");
+                    self.last_error = None;
+                    EventState::Exit
                 }
-            }
+                Ok(false) => EventState::Consumed,
+                Err(e) => {
+                    self.last_error = Some(format!("{:#}", e));
+                    EventState::Consumed
+                }
+            },
             Action::InsertChar(c) => {
                 self.filter.enter_char(c);
                 EventState::Consumed
@@ -151,7 +149,7 @@ impl WorktreesComponent {
         Ok(())
     }
 
-    fn selected_worktree_path(&mut self) -> Option<String> {
+    pub fn selected_worktree_path(&mut self) -> Option<String> {
         self.selected_index.and_then(|index| {
             self.filtered_items()
                 .get(index)

@@ -1,9 +1,11 @@
+mod confirm;
 mod create_worktree;
 mod filter;
 mod list;
 mod repositories;
 mod worktrees;
 
+pub use confirm::ConfirmComponent;
 pub use create_worktree::CreateWorktreeComponent;
 use ratatui::style::{palette::tailwind::SLATE, Modifier, Style};
 pub use repositories::RepositoriesComponent;
@@ -26,6 +28,8 @@ pub enum Action {
     GoLast,
     Select,
     Delete,
+    DeleteWithConfirmation,
+    ForceDelete,
     OpenRepositories,
     ClosePopup,
     EnterInsertMode,
