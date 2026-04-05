@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo build:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo fmt:*)",
+      "Read(//home/momer/projects/devspace/**)",
+      "Bash(jj bookmark:*)",
+      "Bash(jj diff:*)",
+      "Bash(jj log:*)",
+      "Bash(jj describe:*)",
+      "Bash(jj git:*)"
+    ]
+  }
+}

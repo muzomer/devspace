@@ -1,3 +1,5 @@
+use color_eyre::eyre;
+use color_eyre::eyre::WrapErr;
 use git2::{Cred, RemoteCallbacks};
 use rayon::prelude::*;
 use std::{
@@ -9,19 +11,19 @@ use tracing::{debug, error};
 
 pub struct Repository(git2::Repository);
 impl Repository {
-    pub fn from_path(path: &str, run_fetch: bool) -> Result<Self, git2::Error> {
-        let repo = git2::Repository::open(path)?;
+    pub fn from_path(path: &str, run_fetch: bool) -> eyre::Result<Self> {
+        let repo = git2::Repository::open(path)
+            .wrap_err_with(|| format!("Could not open repository at {}", path))?;
         if run_fetch {
             // git fetch --prune
-            if let Err(err) = repo.remotes().and_then(|remotes| {
+            if let Err(err) = repo.remotes().map(|remotes| {
                 remotes.iter().for_each(|remote| {
-                    if let Err(e) =
-                        fetch_with_prune(&repo, remote.expect("Could not get remote name"))
-                    {
-                        debug!("Could not fetch from remote. Error: {}", e);
+                    if let Some(name) = remote {
+                        if let Err(e) = fetch_with_prune(&repo, name) {
+                            debug!("Could not fetch from remote. Error: {}", e);
+                        }
                     }
                 });
-                Ok(())
             }) {
                 debug!("Could not fetch from remotes. Error: {}", err);
             }
@@ -32,38 +34,42 @@ impl Repository {
         &self,
         worktree_name: &str,
         worktrees_dir: &str,
-    ) -> Option<super::Worktree> {
+    ) -> eyre::Result<super::Worktree> {
         let repo_worktrees_dir = PathBuf::from(worktrees_dir).join(self.name());
         let new_worktree_dir = PathBuf::from(&repo_worktrees_dir).join(worktree_name);
 
-        let _ = fs::create_dir_all(&repo_worktrees_dir);
+        fs::create_dir_all(&repo_worktrees_dir).wrap_err_with(|| {
+            format!(
+                "Could not create worktrees directory {:?}",
+                repo_worktrees_dir
+            )
+        })?;
 
         let mut create_worktree_options = git2::WorktreeAddOptions::new();
         create_worktree_options.checkout_existing(true);
-        let result = self.0.worktree(
-            worktree_name,
-            new_worktree_dir.as_path(),
-            Some(&create_worktree_options),
-        );
+        let created_worktree = self
+            .0
+            .worktree(
+                worktree_name,
+                new_worktree_dir.as_path(),
+                Some(&create_worktree_options),
+            )
+            .wrap_err_with(|| format!("Could not create worktree '{}'", worktree_name))?;
 
-        match result {
-            Ok(created_worktree) => {
-                let branch = self
-                    .0
-                    .find_branch(worktree_name, git2::BranchType::Local)
-                    .unwrap();
-                Some(super::Worktree {
-                    git_worktree: created_worktree,
-                    has_remote_branch: branch.upstream().is_ok(),
-                })
-            }
-            Err(error) => {
-                panic!(
-                    "Could not create the worktree {}. Error: {}",
-                    worktree_name, error
-                );
-            }
-        }
+        let branch = self
+            .0
+            .find_branch(worktree_name, git2::BranchType::Local)
+            .wrap_err_with(|| {
+                format!(
+                    "Could not find branch '{}' after creating worktree",
+                    worktree_name
+                )
+            })?;
+
+        Ok(super::Worktree {
+            git_worktree: created_worktree,
+            has_remote_branch: branch.upstream().is_ok(),
+        })
     }
 
     pub fn name(&self) -> String {
@@ -122,24 +128,19 @@ fn fetch_with_prune(git_repo: &git2::Repository, remote_name: &str) -> Result<()
 }
 pub fn list_repositories(path: &str, run_fetch: bool) -> Vec<Repository> {
     debug!("Listing repositories in: {}", path);
-    let repositories: Vec<Repository> = find_git_dirs(Path::new(path))
+    find_git_dirs(Path::new(path))
         .par_iter()
         .filter_map(|dir| match Repository::from_path(dir, run_fetch) {
-            Ok(created_repo) => Some(created_repo),
+            Ok(repo) => Some(repo),
             Err(err) => {
-                error!(
-                    "Could not create repository from path {}. Error: {}",
-                    dir, err
-                );
+                error!("Could not open repository at {}: {}", dir, err);
                 None
             }
         })
-        .collect();
-
-    repositories
+        .collect()
 }
 
-pub fn worktrees_of_repositories(repositories: &Vec<Repository>) -> Vec<super::Worktree> {
+pub fn worktrees_of_repositories(repositories: &[Repository]) -> Vec<super::Worktree> {
     let mut worktrees: Vec<super::Worktree> = Vec::new();
     repositories.iter().for_each(|repo| {
         worktrees.append(&mut repo.worktrees());
@@ -165,7 +166,7 @@ fn is_git_dir(dir: &Path) -> bool {
         }
         Err(err) => {
             error!("Could not read the directory {}: {}", dir.display(), err);
-            return false;
+            false
         }
     }
 }
@@ -183,10 +184,10 @@ fn find_git_dirs(path: &Path) -> Vec<String> {
         return git_dirs;
     }
 
-    return match read_dir(path) {
+    match read_dir(path) {
         Err(err) => {
             error!("Could not read the directory {}: {}", path.display(), err);
-            return git_dirs;
+            git_dirs
         }
         Ok(entries) => {
             for entry in entries.flatten() {
@@ -194,7 +195,7 @@ fn find_git_dirs(path: &Path) -> Vec<String> {
                     continue;
                 }
 
-                if let true = is_git_dir(&entry.path()) {
+                if is_git_dir(&entry.path()) {
                     debug!("Found git repository at: {:?}", entry.path());
                     git_dirs.push(entry.path().to_path_buf().display().to_string());
                 } else {
@@ -208,7 +209,7 @@ fn find_git_dirs(path: &Path) -> Vec<String> {
             }
             git_dirs
         }
-    };
+    }
 }
 
 #[cfg(test)]

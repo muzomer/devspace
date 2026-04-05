@@ -1,5 +1,4 @@
 use clap::Parser;
-use expand_tilde;
 
 #[derive(Debug, Parser)]
 #[command(version, about, long_about = None)]

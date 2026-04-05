@@ -73,7 +73,10 @@ impl App {
                             EventState::Consumed
                         }
                         (KeyCode::Char('x'), KeyModifiers::CONTROL) => {
-                            self.worktrees_component.delete_selected_worktree();
+                            match self.worktrees_component.delete_selected_worktree() {
+                                Ok(()) => self.worktrees_component.last_error = None,
+                                Err(e) => self.worktrees_component.last_error = Some(format!("{:#}", e)),
+                            }
                             EventState::Consumed
                         }
                         _ => EventState::NotConsumed,
@@ -108,11 +111,17 @@ impl App {
                         if let Some(selected_repository) =
                             self.repositories_component.selected_repository()
                         {
-                            if let Some(created_worktree) = selected_repository.create_new_worktree(
+                            match selected_repository.create_new_worktree(
                                 &self.create_worktree.new_worktree_name,
                                 &self.args.worktrees_dir,
                             ) {
-                                self.worktrees_component.add(created_worktree);
+                                Ok(created_worktree) => {
+                                    self.worktrees_component.last_error = None;
+                                    self.worktrees_component.add(created_worktree);
+                                }
+                                Err(e) => {
+                                    self.worktrees_component.last_error = Some(format!("{:#}", e));
+                                }
                             }
                         }
                     }
