@@ -41,6 +41,7 @@ fn resolve_normal(key: KeyEvent) -> Option<Action> {
             Some(Action::EnterInsertMode)
         }
         (KeyCode::Tab, KeyModifiers::NONE) => Some(Action::FocusNext),
+        (KeyCode::Char('?'), KeyModifiers::NONE) => Some(Action::ShowHelp),
         (KeyCode::Char('q'), KeyModifiers::NONE) => Some(Action::Quit),
         (KeyCode::Char('c'), KeyModifiers::CONTROL) => Some(Action::Quit),
         _ => None,

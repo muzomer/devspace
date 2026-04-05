@@ -1,12 +1,14 @@
 mod confirm;
 mod create_worktree;
 mod filter;
+mod help;
 mod list;
 mod repositories;
 mod worktrees;
 
 pub use confirm::ConfirmComponent;
 pub use create_worktree::CreateWorktreeComponent;
+pub use help::HelpComponent;
 use ratatui::style::{palette::tailwind::SLATE, Modifier, Style};
 pub use repositories::RepositoriesComponent;
 pub use worktrees::WorktreesComponent;
@@ -37,5 +39,6 @@ pub enum Action {
     InsertChar(char),
     DeleteChar,
     FocusNext,
+    ShowHelp,
     Quit,
 }
