@@ -1,6 +1,7 @@
 use ratatui::{
     layout::Rect,
     style::{Color, Style, Stylize},
+    text::Line,
     widgets::{Block, BorderType, Paragraph},
     Frame,
 };
@@ -30,8 +31,8 @@ impl FilterComponent {
             Block::bordered()
                 .border_type(BorderType::Rounded)
                 .border_style(border_style)
-                .title(self.title.as_str())
-                .style(Style::new().white().bold()),
+                .title(Line::from(self.title.as_str()).style(Style::new().fg(Color::Gray)))
+                .style(Style::new().white()),
         );
         f.render_widget(input, rect);
     }

@@ -1,6 +1,7 @@
 use ratatui::{
-    layout::{Alignment, Constraint, Layout, Rect},
-    style::Stylize,
+    layout::{Constraint, Layout, Rect},
+    style::{Color, Style, Stylize},
+    text::{Line, Span},
     widgets::{Block, BorderType, Clear, Padding, Paragraph, Widget},
     Frame,
 };
@@ -10,43 +11,67 @@ use super::{Action, EventState};
 pub struct CreateWorktreeComponent {
     character_index: usize,
     pub new_worktree_name: String,
+    repo_name: String,
 }
 
 impl CreateWorktreeComponent {
-    pub fn new() -> Self {
+    pub fn new(repo_name: String) -> Self {
         Self {
             character_index: 0,
             new_worktree_name: String::new(),
+            repo_name,
         }
     }
 
     pub fn draw(&mut self, frame: &mut Frame, area: Rect) {
         frame.render_widget(Clear, area);
-        Block::bordered()
+
+        let input_border_style = if self.new_worktree_name.is_empty() {
+            super::BORDER_STYLE
+        } else if is_valid_branch_name(&self.new_worktree_name) {
+            Style::new().fg(Color::Cyan)
+        } else {
+            Style::new().fg(Color::Red)
+        };
+
+        let outer_block = Block::bordered()
             .border_type(BorderType::Rounded)
             .border_style(super::BORDER_STYLE)
-            .title(" New Worktree ")
-            .bold()
-            .title_alignment(Alignment::Center)
-            .render(area, frame.buffer_mut());
+            .title(Line::from(" New Worktree ").style(Style::new().fg(Color::Gray)))
+            .title_top(
+                Line::from(format!(" repo: {} ", self.repo_name))
+                    .style(Style::new().fg(Color::Gray))
+                    .right_aligned(),
+            )
+            .title_bottom(keybinding_hint());
+
+        let inner_area = outer_block.inner(area);
+        outer_block.render(area, frame.buffer_mut());
 
         let [_, label_area, input_area] = Layout::vertical([
-            Constraint::Length(3),
+            Constraint::Length(1),
             Constraint::Length(1),
             Constraint::Length(3),
         ])
-        .horizontal_margin(6)
-        .areas(area);
+        .horizontal_margin(4)
+        .areas(inner_area);
 
-        Paragraph::new("New worktree branch name:").render(label_area, frame.buffer_mut());
+        Paragraph::new("Branch name:").render(label_area, frame.buffer_mut());
+
         Paragraph::new(self.new_worktree_name.as_str())
             .block(
                 Block::bordered()
                     .border_type(BorderType::Rounded)
-                    .border_style(super::BORDER_STYLE)
+                    .border_style(input_border_style)
                     .padding(Padding::horizontal(1)),
             )
             .render(input_area, frame.buffer_mut());
+
+        // input_area: border(1) + padding(1) = offset 2; y+1 skips top border row
+        frame.set_cursor_position((
+            input_area.x + 2 + self.character_index as u16,
+            input_area.y + 1,
+        ));
     }
 
     pub fn handle_action(&mut self, action: Action) -> EventState {
@@ -64,8 +89,15 @@ impl CreateWorktreeComponent {
     }
 
     fn enter_char(&mut self, new_char: char) {
+        let ch = if new_char == ' ' {
+            '-'
+        } else if is_valid_branch_char(new_char) {
+            new_char
+        } else {
+            return;
+        };
         let index = self.byte_index();
-        self.new_worktree_name.insert(index, new_char);
+        self.new_worktree_name.insert(index, ch);
         self.move_cursor_right();
     }
 
@@ -105,4 +137,34 @@ impl CreateWorktreeComponent {
     fn clamp_cursor(&self, new_cursor_pos: usize) -> usize {
         new_cursor_pos.clamp(0, self.new_worktree_name.chars().count())
     }
+}
+
+fn keybinding_hint() -> Line<'static> {
+    Line::from(vec![
+        Span::styled(" Enter ", Style::new().white().bold()),
+        Span::styled("confirm", Style::new().dark_gray()),
+        Span::styled("   Esc ", Style::new().white().bold()),
+        Span::styled("cancel ", Style::new().dark_gray()),
+    ])
+    .right_aligned()
+}
+
+fn is_valid_branch_char(c: char) -> bool {
+    c.is_alphanumeric() || matches!(c, '-' | '_' | '.' | '/')
+}
+
+fn is_valid_branch_name(name: &str) -> bool {
+    if name.is_empty() {
+        return false;
+    }
+    if name.starts_with('-') || name.starts_with('.') {
+        return false;
+    }
+    if name.ends_with('.') || name.ends_with('/') {
+        return false;
+    }
+    if name.contains("..") || name.contains("@{") {
+        return false;
+    }
+    true
 }

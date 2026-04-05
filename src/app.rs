@@ -46,7 +46,7 @@ impl App {
         Self {
             worktrees_component,
             repositories_component,
-            create_worktree: CreateWorktreeComponent::new(),
+            create_worktree: CreateWorktreeComponent::new(String::new()),
             confirm_component: ConfirmComponent::new(String::new()),
             help_component: HelpComponent::new(vec![]),
             focus: Focus::Worktrees,
@@ -74,7 +74,7 @@ impl App {
         }
 
         if let Focus::CreateWorktree = self.focus {
-            let popup_area = self.popup_area(full_area, 50, 30);
+            let popup_area = self.popup_area(full_area, 55, 30);
             self.create_worktree.draw(frame, popup_area);
         }
 
@@ -167,7 +167,12 @@ impl App {
                 EventState::Consumed
             }
             Action::Select => {
-                self.create_worktree = CreateWorktreeComponent::new();
+                let repo_name = self
+                    .repositories_component
+                    .selected_repository()
+                    .map(|r| r.name())
+                    .unwrap_or_default();
+                self.create_worktree = CreateWorktreeComponent::new(repo_name);
                 self.focus = Focus::CreateWorktree;
                 self.mode = InputMode::Insert;
                 EventState::Consumed
