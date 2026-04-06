@@ -17,6 +17,7 @@ use super::{
     list::{Focus, ListComponent},
     Action, EventState, SELECTED_STYLE,
 };
+use crate::keymap::InputMode;
 
 pub struct RepositoriesComponent {
     repositories: Vec<Repository>,
@@ -37,12 +38,15 @@ impl RepositoriesComponent {
         }
     }
 
-    pub fn draw(&mut self, f: &mut Frame, rect: Rect) {
+    pub fn draw(&mut self, f: &mut Frame, rect: Rect, mode: InputMode) {
         f.render_widget(Clear, rect);
         let [filter_area, repos_list_area] =
             Layout::vertical([Constraint::Length(3), Constraint::Min(1)]).areas(rect);
-        self.filter
-            .draw(f, filter_area, matches!(self.focus, Focus::Filter));
+        self.filter.draw(
+            f,
+            filter_area,
+            matches!(mode, InputMode::Insert) && matches!(self.focus, Focus::Filter),
+        );
         let list = List::new(self.filtered_items())
             .block(
                 Block::bordered()

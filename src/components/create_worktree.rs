@@ -26,13 +26,12 @@ impl CreateWorktreeComponent {
     pub fn draw(&mut self, frame: &mut Frame, area: Rect) {
         frame.render_widget(Clear, area);
 
-        let input_border_style = if self.new_worktree_name.is_empty() {
-            super::BORDER_STYLE
-        } else if is_valid_branch_name(&self.new_worktree_name) {
-            Style::new().fg(Color::Cyan)
-        } else {
-            Style::new().fg(Color::Red)
-        };
+        let input_border_style =
+            if self.new_worktree_name.is_empty() || is_valid_branch_name(&self.new_worktree_name) {
+                Style::new().fg(Color::Cyan)
+            } else {
+                Style::new().fg(Color::Red)
+            };
 
         let outer_block = Block::bordered()
             .border_type(BorderType::Rounded)

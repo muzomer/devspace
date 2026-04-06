@@ -23,7 +23,7 @@ impl FilterComponent {
 
     pub fn draw(&mut self, f: &mut Frame, rect: Rect, is_active: bool) {
         let border_style = if is_active {
-            Style::new().fg(Color::Yellow)
+            Style::new().fg(Color::Cyan)
         } else {
             super::BORDER_STYLE
         };

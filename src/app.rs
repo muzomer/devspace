@@ -70,7 +70,7 @@ impl App {
 
         if let Focus::Repositories = self.focus {
             let popup_area = self.popup_area(full_area, 50, 50);
-            self.repositories_component.draw(frame, popup_area);
+            self.repositories_component.draw(frame, popup_area, self.mode);
         }
 
         if let Focus::CreateWorktree = self.focus {
@@ -117,6 +117,7 @@ impl App {
             }
             Action::OpenRepositories => {
                 self.focus = Focus::Repositories;
+                self.mode = InputMode::Normal;
                 EventState::Consumed
             }
             Action::Delete | Action::ForceDelete => {
