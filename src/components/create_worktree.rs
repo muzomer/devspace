@@ -141,9 +141,9 @@ impl CreateWorktreeComponent {
 
 fn keybinding_hint() -> Line<'static> {
     Line::from(vec![
-        Span::styled(" Enter ", Style::new().white().bold()),
+        Span::styled("[Enter] ", Style::new().white().bold()),
         Span::styled("confirm", Style::new().dark_gray()),
-        Span::styled("   Esc ", Style::new().white().bold()),
+        Span::styled("  [Esc] ", Style::new().white().bold()),
         Span::styled("cancel ", Style::new().dark_gray()),
     ])
     .right_aligned()
