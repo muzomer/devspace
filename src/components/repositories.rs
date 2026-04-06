@@ -136,17 +136,25 @@ impl ListComponent<Repository> for RepositoriesComponent {
             return items;
         }
         let mut matcher = Matcher::new(Config::DEFAULT);
-        let pattern = Pattern::parse(query, CaseMatching::Ignore, Normalization::Smart);
+        let patterns: Vec<Pattern> = query
+            .split_whitespace()
+            .map(|w| Pattern::parse(w, CaseMatching::Ignore, Normalization::Smart))
+            .collect();
         let mut buf = Vec::new();
         let min_score: u32 = 70;
         let mut scored: Vec<(&Repository, u32)> = self
             .repositories
             .iter()
             .filter_map(|r| {
-                pattern
-                    .score(Utf32Str::new(&r.name(), &mut buf), &mut matcher)
-                    .filter(|&s| s >= min_score)
-                    .map(|s| (r, s))
+                let name = r.name();
+                let mut total = 0u32;
+                for pattern in &patterns {
+                    match pattern.score(Utf32Str::new(&name, &mut buf), &mut matcher) {
+                        Some(s) if s >= min_score => total += s,
+                        _ => return None,
+                    }
+                }
+                Some((r, total))
             })
             .collect();
         scored.sort_by(|a, b| b.1.cmp(&a.1));
