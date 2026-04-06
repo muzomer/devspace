@@ -272,15 +272,20 @@ impl ListComponent<git::Worktree> for WorktreesComponent {
         }
         let worktrees_dir = self.worktrees_dir.as_str();
         let mut matcher = Matcher::new(Config::DEFAULT);
-        let patterns: Vec<Pattern> = query
+        // Pair each word with its per-word minimum score threshold.
+        // Short words (1-2 chars) have low scores due to gap penalties on
+        // longer haystacks, so we accept any match for them.
+        let patterns: Vec<(Pattern, u32)> = query
             .split_whitespace()
-            .map(|w| Pattern::parse(w, CaseMatching::Ignore, Normalization::Smart))
+            .map(|w| {
+                let min = if w.len() >= 3 { 70 } else { 1 };
+                (
+                    Pattern::parse(w, CaseMatching::Ignore, Normalization::Smart),
+                    min,
+                )
+            })
             .collect();
         let mut buf = Vec::new();
-        // Minimum score to exclude incidental character-scatter matches.
-        // A direct substring hit scores ~90+; scattered chars across a long
-        // display string score ~20-40 due to gap penalties.
-        let min_score: u32 = 70;
         let mut scored: Vec<(&git::Worktree, u32)> = self
             .worktrees
             .iter()
@@ -291,9 +296,9 @@ impl ListComponent<git::Worktree> for WorktreesComponent {
                     .unwrap_or(path)
                     .trim_start_matches('/');
                 let mut total = 0u32;
-                for pattern in &patterns {
+                for (pattern, min_score) in &patterns {
                     match pattern.score(Utf32Str::new(display, &mut buf), &mut matcher) {
-                        Some(s) if s >= min_score => total += s,
+                        Some(s) if s >= *min_score => total += s,
                         _ => return None,
                     }
                 }
