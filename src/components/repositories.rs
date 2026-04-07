@@ -8,7 +8,10 @@ use crate::git::Repository;
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
     style::{Style, Stylize},
-    widgets::{Block, BorderType, Clear, List, ListDirection, ListItem, ListState, StatefulWidget},
+    widgets::{
+        Block, BorderType, Clear, List, ListDirection, ListItem, ListState, Scrollbar,
+        ScrollbarOrientation, ScrollbarState, StatefulWidget,
+    },
     Frame,
 };
 
@@ -47,17 +50,27 @@ impl RepositoriesComponent {
             filter_area,
             matches!(mode, InputMode::Insert) && matches!(self.focus, Focus::Filter),
         );
+        let block = Block::bordered()
+            .border_type(BorderType::Rounded)
+            .border_style(super::BORDER_STYLE)
+            .title_alignment(Alignment::Center);
+        let inner_area = block.inner(repos_list_area);
+
         let list = List::new(self.filtered_items())
-            .block(
-                Block::bordered()
-                    .border_type(BorderType::Rounded)
-                    .border_style(super::BORDER_STYLE)
-                    .title_alignment(Alignment::Center),
-            )
+            .block(block)
             .style(Style::new().white())
             .highlight_style(SELECTED_STYLE)
             .direction(ListDirection::TopToBottom);
         StatefulWidget::render(list, repos_list_area, f.buffer_mut(), &mut self.state);
+
+        let total = self.filtered_items().len();
+        let mut scroll_state = ScrollbarState::new(total).position(self.state.offset());
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(None)
+            .end_symbol(None)
+            .thumb_style(Style::new().dark_gray())
+            .track_style(Style::new().dark_gray());
+        f.render_stateful_widget(scrollbar, inner_area, &mut scroll_state);
     }
 
     pub fn handle_action(&mut self, action: Action) -> EventState {

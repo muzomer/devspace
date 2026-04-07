@@ -109,7 +109,9 @@ impl WorktreesComponent {
         StatefulWidget::render(list, list_area, f.buffer_mut(), &mut self.state);
 
         let mut scroll_state = ScrollbarState::new(total).position(self.state.offset());
-        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight);
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(None)
+            .end_symbol(None);
         f.render_stateful_widget(scrollbar, list_area, &mut scroll_state);
     }
 
