@@ -8,6 +8,7 @@ use crate::git::Repository;
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
     style::{Style, Stylize},
+    text::Line,
     widgets::{
         Block, BorderType, Clear, List, ListDirection, ListItem, ListState, Scrollbar,
         ScrollbarOrientation, ScrollbarState, StatefulWidget,
@@ -50,10 +51,13 @@ impl RepositoriesComponent {
             filter_area,
             matches!(mode, InputMode::Insert) && matches!(self.focus, Focus::Filter),
         );
-        let block = Block::bordered()
+        let mut block = Block::bordered()
             .border_type(BorderType::Rounded)
             .border_style(super::BORDER_STYLE)
             .title_alignment(Alignment::Center);
+        if matches!(mode, InputMode::Normal) {
+            block = block.title_bottom(Line::from(" ? help ").dark_gray().right_aligned());
+        }
         let inner_area = block.inner(repos_list_area);
 
         let list = List::new(self.filtered_items())

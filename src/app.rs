@@ -68,7 +68,12 @@ impl App {
             matches!(self.focus, Focus::Worktrees),
         );
 
-        if let Focus::Repositories = self.focus {
+        let show_repos = matches!(self.focus, Focus::Repositories)
+            || matches!(
+                (self.focus, self.previous_focus),
+                (Focus::Help, Focus::Repositories)
+            );
+        if show_repos {
             let popup_area = self.popup_area(full_area, 50, 50);
             self.repositories_component.draw(frame, popup_area, self.mode);
         }
