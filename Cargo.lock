@@ -469,7 +469,7 @@ dependencies = [
 
 [[package]]
 name = "devspace"
-version = "0.3.4"
+version = "0.3.5"
 dependencies = [
  "arboard",
  "assert_cmd",

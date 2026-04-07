@@ -45,8 +45,43 @@ impl Repository {
             )
         })?;
 
+        // If a remote branch with the same name exists, base the new worktree on it.
+        // Otherwise fall back to the current HEAD of the repository.
+        let remote_branch_name = format!("origin/{}", worktree_name);
+        let local_branch =
+            if let Ok(remote_branch) = self.0.find_branch(&remote_branch_name, git2::BranchType::Remote) {
+                let commit = remote_branch
+                    .get()
+                    .peel_to_commit()
+                    .wrap_err_with(|| format!("Could not resolve remote branch '{}'", remote_branch_name))?;
+                let branch = match self.0.find_branch(worktree_name, git2::BranchType::Local) {
+                    Ok(existing) => existing,
+                    Err(_) => {
+                        let mut new_branch = self
+                            .0
+                            .branch(worktree_name, &commit, false)
+                            .wrap_err_with(|| {
+                                format!("Could not create local branch '{}' from remote", worktree_name)
+                            })?;
+                        new_branch
+                            .set_upstream(Some(&remote_branch_name))
+                            .wrap_err_with(|| {
+                                format!("Could not set upstream for branch '{}'", worktree_name)
+                            })?;
+                        new_branch
+                    }
+                };
+                Some(branch)
+            } else {
+                None
+            };
+
         let mut create_worktree_options = git2::WorktreeAddOptions::new();
         create_worktree_options.checkout_existing(true);
+        if let Some(ref branch) = local_branch {
+            create_worktree_options.reference(Some(branch.get()));
+        }
+
         let created_worktree = self
             .0
             .worktree(
