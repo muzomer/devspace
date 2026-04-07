@@ -56,49 +56,18 @@ This command should install the binary in `$HOME/.cargo/bin/devspace`.
 
 # Usage
 
-Run `devspace` from any directory with the below CLI options, or define the environment variables and just run it without any CLI option:
+Run `devspace` from any directory with the below CLI options, or define the environment variables and run it without any CLI option:
 - `--repos-dir`: the directory where the repositories are stored (or set `DEVSPACE_REPOS_DIR` env variable)
 - `--worktrees-dir`: the directory where the worktrees will be stored (or set `DEVSPACE_WORKTREES_DIR` env variable).
 
 ## Keybindings
 
-Each screen is treated as a separate mode. By default, `devspace` starts in the `Worktrees Mode`.
-
-### Worktrees Mode
-
-Lists the worktrees that exist under the worktrees directory.
-
-| Keybinding | Description |
-| ------------- | ------------- |
-| `Ctrl + N` or `Down Arrow`  | Move down in the list |
-| `Ctrl + P` or `Up Arrow`  | Move up in the list |
-| `Ctrl + D` | Switch to `Repositories Mode` |
-| `Ctrl + X` | Delete the selected worktree |
-| `Ctrl + C` | Quit |
-| `Enter` | Copy the full path of the selected worktree to the clipboard and exit |
-
-### Repositories Mode
-
-Lists the repositories that exist under the repositories directory.
-
-| Keybinding | Description |
-| ------------- | ------------- |
-| `Ctrl + N` or `Down Arrow`  | Move down in the list |
-| `Ctrl + P` or `Up Arrow`  | Move up in the list |
-| `Enter` | Select the current repository and switch to the `New Worktree Mode`|
-
-### New Worktree Mode
-
-Creates new worktree in the selected repository.
-
-| Keybinding | Description |
-| ------------- | ------------- |
-| `Enter` | Create new worktree with the provided branch name in the selected repository and switch to `Worktrees Mode` |
+`devspace` uses vi-style keybindings. Press `?` in the Worktrees or Repositories view to show the full keybindings reference. Press `q` or `Ctrl+C` to quit.
 
 # Roadmap
 
 - [x] Create new worktrees.
 - [x] Delete worktrees.
 - [x] Show the status of worktrees (e.g. stale, active ...etc.).
-- [ ] Create worktrees from remote branches.
+- [x] Create worktrees from remote branches.
 - [ ] Add metadata to worktrees, e.g. JIRA links, PR links ...etc.
