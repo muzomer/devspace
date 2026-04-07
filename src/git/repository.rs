@@ -9,6 +9,44 @@ use std::{
 };
 use tracing::{debug, error};
 
+use super::RemoteStatus;
+
+fn remote_status_of_branch(repo: &git2::Repository, branch: &git2::Branch) -> RemoteStatus {
+    let refname = match branch.get().name() {
+        Some(n) => n,
+        None => return RemoteStatus::NeverPushed,
+    };
+    match repo.branch_upstream_name(refname) {
+        Err(_) => RemoteStatus::NeverPushed,
+        Ok(_) => {
+            if branch.upstream().is_ok() {
+                RemoteStatus::Exists
+            } else {
+                RemoteStatus::Gone
+            }
+        }
+    }
+}
+
+fn is_worktree_dirty(worktree_path: &str) -> bool {
+    let path = Path::new(worktree_path);
+    if path.join(".jj").exists() {
+        return false;
+    }
+    match git2::Repository::open(path) {
+        Ok(repo) => {
+            let mut opts = git2::StatusOptions::new();
+            opts.include_untracked(false);
+            opts.exclude_submodules(true);
+            match repo.statuses(Some(&mut opts)) {
+                Ok(statuses) => !statuses.is_empty(),
+                Err(_) => false,
+            }
+        }
+        Err(_) => false,
+    }
+}
+
 pub struct Repository(git2::Repository);
 impl Repository {
     pub fn from_path(path: &str, run_fetch: bool) -> eyre::Result<Self> {
@@ -108,9 +146,11 @@ impl Repository {
                 )
             })?;
 
+        let remote_status = remote_status_of_branch(&self.0, &branch);
         Ok(super::Worktree {
             git_worktree: created_worktree,
-            has_remote_branch: branch.upstream().is_ok(),
+            remote_status,
+            is_dirty: false,
         })
     }
 
@@ -164,14 +204,22 @@ impl Repository {
                         if let Ok(git_worktree) = self.0.find_worktree(worktree_name) {
                             let branch = self.0.find_branch(worktree_name, git2::BranchType::Local);
 
-                            let has_remote_branch = match branch {
-                                Ok(branch) => branch.upstream().is_ok(),
-                                Err(_) => false,
+                            let remote_status = match branch {
+                                Ok(ref b) => remote_status_of_branch(&self.0, b),
+                                Err(_) => RemoteStatus::NeverPushed,
                             };
+
+                            let worktree_path = git_worktree
+                                .path()
+                                .to_str()
+                                .unwrap_or("")
+                                .to_string();
+                            let is_dirty = is_worktree_dirty(&worktree_path);
 
                             git_worktrees.push(super::Worktree {
                                 git_worktree,
-                                has_remote_branch,
+                                remote_status,
+                                is_dirty,
                             });
                         }
                     }

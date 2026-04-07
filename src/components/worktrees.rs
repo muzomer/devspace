@@ -1,4 +1,4 @@
-use crate::git;
+use crate::git::{self, RemoteStatus};
 use arboard::Clipboard;
 use color_eyre::eyre;
 use color_eyre::eyre::WrapErr;
@@ -52,19 +52,21 @@ impl WorktreesComponent {
     pub fn draw(&mut self, f: &mut Frame, rect: Rect, mode: InputMode, is_active: bool) {
         let worktrees_dir = self.worktrees_dir.clone();
 
-        // Collect (has_remote, path) as owned data so the mutable borrow from
+        // Collect (remote_status, is_dirty, path) as owned data so the mutable borrow from
         // filtered_items() fully ends before we access other fields of self.
-        let display_data: Vec<(bool, String)> = {
+        let display_data: Vec<(RemoteStatus, bool, String)> = {
             let filtered = self.filtered_items();
             filtered
                 .iter()
-                .map(|wt| (wt.has_remote_branch, wt.path().to_string()))
+                .map(|wt| (wt.remote_status, wt.is_dirty, wt.path().to_string()))
                 .collect()
         };
         let total = display_data.len();
         let items: Vec<ListItem<'static>> = display_data
             .iter()
-            .map(|(has_remote, path)| worktree_to_list_item(*has_remote, path, &worktrees_dir))
+            .map(|(remote_status, is_dirty, path)| {
+                worktree_to_list_item(*remote_status, *is_dirty, path, &worktrees_dir)
+            })
             .collect();
 
         let current = self.selected_index.map(|i| i + 1).unwrap_or(0);
@@ -224,16 +226,21 @@ impl WorktreesComponent {
     }
 }
 
-fn worktree_to_list_item(has_remote: bool, path: &str, worktrees_dir: &str) -> ListItem<'static> {
-    let (remote_indicator, indicator_color) = if has_remote {
-        ("✓", Color::Green)
-    } else {
-        ("✗", Color::Red)
+fn worktree_to_list_item(
+    remote_status: RemoteStatus,
+    is_dirty: bool,
+    path: &str,
+    worktrees_dir: &str,
+) -> ListItem<'static> {
+    let (remote_indicator, indicator_color) = match remote_status {
+        RemoteStatus::Exists => ("✔", Color::Green),
+        RemoteStatus::Gone => ("✘", Color::Red),
+        RemoteStatus::NeverPushed => ("⬆", Color::Yellow),
     };
 
     let indicator_span = Span::styled(
         format!("{} ", remote_indicator),
-        Style::default().fg(indicator_color),
+        Style::default().fg(indicator_color).add_modifier(Modifier::BOLD),
     );
 
     let path = path.trim_end_matches('/');
@@ -253,10 +260,20 @@ fn worktree_to_list_item(has_remote: bool, path: &str, worktrees_dir: &str) -> L
                 .fg(Color::White)
                 .add_modifier(Modifier::BOLD),
         );
-        Line::from(vec![indicator_span, repo_span, sep_span, branch_span])
+        if is_dirty {
+            let dirty_span = Span::styled("*", Style::default().fg(Color::Yellow));
+            Line::from(vec![indicator_span, repo_span, sep_span, branch_span, dirty_span])
+        } else {
+            Line::from(vec![indicator_span, repo_span, sep_span, branch_span])
+        }
     } else {
         let path_span = Span::from(relative.to_string());
-        Line::from(vec![indicator_span, path_span])
+        if is_dirty {
+            let dirty_span = Span::styled("*", Style::default().fg(Color::Yellow));
+            Line::from(vec![indicator_span, path_span, dirty_span])
+        } else {
+            Line::from(vec![indicator_span, path_span])
+        }
     };
 
     ListItem::new(line)

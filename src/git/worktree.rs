@@ -7,9 +7,20 @@ use std::{
 };
 use tracing::debug;
 
+#[derive(Clone, Copy)]
+pub enum RemoteStatus {
+    /// Upstream is configured and the remote tracking ref exists.
+    Exists,
+    /// Upstream was configured but the remote tracking ref is gone (merged/deleted).
+    Gone,
+    /// No upstream has ever been configured (never pushed).
+    NeverPushed,
+}
+
 pub struct Worktree {
     pub git_worktree: git2::Worktree,
-    pub has_remote_branch: bool,
+    pub remote_status: RemoteStatus,
+    pub is_dirty: bool,
 }
 impl Worktree {
     pub fn path(&self) -> &str {
