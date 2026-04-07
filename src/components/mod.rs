@@ -8,7 +8,7 @@ mod worktrees;
 
 pub use confirm::ConfirmComponent;
 pub use create_worktree::CreateWorktreeComponent;
-pub use help::HelpComponent;
+pub use help::{HelpComponent, HelpEntry};
 use ratatui::style::{palette::tailwind::SLATE, Color, Modifier, Style};
 pub use repositories::RepositoriesComponent;
 pub use worktrees::WorktreesComponent;
