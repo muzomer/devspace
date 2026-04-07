@@ -14,36 +14,25 @@ pub enum ItemOrder {
 
 pub trait ListComponent<T> {
     fn select(&mut self, item_order: ItemOrder) {
-        match item_order {
-            ItemOrder::Next => {
-                if let Some(index) = self.get_state().selected() {
-                    if index == self.filtered_items().len() - 1 {
-                        self.get_state().select_first();
-                    } else {
-                        self.get_state().select_next();
-                    }
-                } else {
-                    self.get_state().select_first();
-                }
-            }
-            ItemOrder::Previous => {
-                if let Some(index) = self.get_state().selected() {
-                    if index == 0 {
-                        self.get_state().select_last();
-                    } else {
-                        self.get_state().select_previous();
-                    }
-                } else {
-                    self.get_state().select_last();
-                }
-            }
-            ItemOrder::Last => self.get_state().select_last(),
-            ItemOrder::First => self.get_state().select_first(),
+        let len = self.filtered_items().len();
+        if len == 0 {
+            return;
         }
-
-        if let Some(selected_index) = self.get_state().selected() {
-            self.update_selected_index(selected_index);
-        }
+        let new_index = match item_order {
+            ItemOrder::Next => match self.get_state().selected() {
+                Some(i) if i >= len - 1 => 0,
+                Some(i) => i + 1,
+                None => 0,
+            },
+            ItemOrder::Previous => match self.get_state().selected() {
+                Some(0) | None => len - 1,
+                Some(i) => i - 1,
+            },
+            ItemOrder::Last => len - 1,
+            ItemOrder::First => 0,
+        };
+        self.get_state().select(Some(new_index));
+        self.update_selected_index(new_index);
     }
 
     fn filtered_items(&mut self) -> Vec<&T>;

@@ -1,6 +1,10 @@
+use nucleo_matcher::{
+    pattern::{CaseMatching, Normalization, Pattern},
+    Config, Matcher, Utf32Str,
+};
+
 use super::list::ItemOrder;
 use crate::git::Repository;
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
     style::{Style, Stylize},
@@ -11,8 +15,9 @@ use ratatui::{
 use super::{
     filter::FilterComponent,
     list::{Focus, ListComponent},
-    EventState, SELECTED_STYLE,
+    Action, EventState, SELECTED_STYLE,
 };
+use crate::keymap::InputMode;
 
 pub struct RepositoriesComponent {
     repositories: Vec<Repository>,
@@ -33,15 +38,20 @@ impl RepositoriesComponent {
         }
     }
 
-    pub fn draw(&mut self, f: &mut Frame, rect: Rect) {
+    pub fn draw(&mut self, f: &mut Frame, rect: Rect, mode: InputMode) {
         f.render_widget(Clear, rect);
         let [filter_area, repos_list_area] =
             Layout::vertical([Constraint::Length(3), Constraint::Min(1)]).areas(rect);
-        self.filter.draw(f, filter_area);
+        self.filter.draw(
+            f,
+            filter_area,
+            matches!(mode, InputMode::Insert) && matches!(self.focus, Focus::Filter),
+        );
         let list = List::new(self.filtered_items())
             .block(
                 Block::bordered()
                     .border_type(BorderType::Rounded)
+                    .border_style(super::BORDER_STYLE)
                     .title_alignment(Alignment::Center),
             )
             .style(Style::new().white())
@@ -50,45 +60,55 @@ impl RepositoriesComponent {
         StatefulWidget::render(list, repos_list_area, f.buffer_mut(), &mut self.state);
     }
 
-    pub fn handle_key(&mut self, key: KeyEvent) -> EventState {
-        match self.focus {
-            Focus::Filter => {
-                let result = self.filter.handle_key(key);
-                if result == EventState::Consumed {
-                    self.select(ItemOrder::First);
-                    result
-                } else {
-                    if key.modifiers == KeyModifiers::CONTROL {
-                        match key.code {
-                            KeyCode::Char('n') => {
-                                self.select(ItemOrder::Next);
-                            }
-                            KeyCode::Char('p') => {
-                                self.select(ItemOrder::Previous);
-                            }
-                            _ => return EventState::NotConsumed,
-                        }
-                    } else {
-                        match key.code {
-                            KeyCode::Tab => self.focus = Focus::List,
-                            _ => return EventState::NotConsumed,
-                        }
-                    }
-                    EventState::Consumed
-                }
-            }
-            Focus::List => {
-                match key.code {
-                    KeyCode::Char('j') | KeyCode::Down => self.select(ItemOrder::Next),
-                    KeyCode::Char('k') | KeyCode::Up => self.select(ItemOrder::Previous),
-                    KeyCode::Char('g') | KeyCode::Home => self.select(ItemOrder::First),
-                    KeyCode::Char('G') | KeyCode::End => self.select(ItemOrder::Last),
-                    KeyCode::Tab => self.focus = Focus::Filter,
-                    _ => return EventState::NotConsumed,
-                }
+    pub fn handle_action(&mut self, action: Action) -> EventState {
+        match action {
+            Action::MoveDown => {
+                self.select(ItemOrder::Next);
                 EventState::Consumed
             }
+            Action::MoveUp => {
+                self.select(ItemOrder::Previous);
+                EventState::Consumed
+            }
+            Action::GoFirst => {
+                self.select(ItemOrder::First);
+                EventState::Consumed
+            }
+            Action::GoLast => {
+                self.select(ItemOrder::Last);
+                EventState::Consumed
+            }
+            Action::InsertChar(c) => {
+                self.filter.enter_char(c);
+                self.select(ItemOrder::First);
+                EventState::Consumed
+            }
+            Action::DeleteChar => {
+                self.filter.delete_char();
+                self.select(ItemOrder::First);
+                EventState::Consumed
+            }
+            _ => EventState::NotConsumed,
         }
+    }
+
+    pub fn focus_filter(&mut self) {
+        self.focus = Focus::Filter;
+    }
+
+    pub fn focus_list(&mut self) {
+        self.focus = Focus::List;
+    }
+
+    pub fn toggle_focus(&mut self) {
+        self.focus = match self.focus {
+            Focus::Filter => Focus::List,
+            Focus::List => Focus::Filter,
+        };
+    }
+
+    pub fn is_filter_focused(&self) -> bool {
+        matches!(self.focus, Focus::Filter)
     }
 
     pub fn selected_repository(&mut self) -> Option<&Repository> {
@@ -113,18 +133,44 @@ impl From<&Repository> for ListItem<'_> {
 
 impl ListComponent<Repository> for RepositoriesComponent {
     fn filtered_items(&mut self) -> Vec<&Repository> {
-        let mut filtered_repositories = self
+        let query = self.filter.value.as_str();
+        if query.is_empty() {
+            let mut items: Vec<&Repository> = self.repositories.iter().collect();
+            items.sort_by_key(|a| a.name());
+            return items;
+        }
+        let mut matcher = Matcher::new(Config::DEFAULT);
+        // Pair each word with its per-word minimum score threshold.
+        // Short words (1-2 chars) have low scores due to gap penalties on
+        // longer haystacks, so we accept any match for them.
+        let patterns: Vec<(Pattern, u32)> = query
+            .split_whitespace()
+            .map(|w| {
+                let min = if w.len() >= 3 { 70 } else { 1 };
+                (
+                    Pattern::parse(w, CaseMatching::Ignore, Normalization::Smart),
+                    min,
+                )
+            })
+            .collect();
+        let mut buf = Vec::new();
+        let mut scored: Vec<(&Repository, u32)> = self
             .repositories
             .iter()
-            .filter(|repository| repository.name().contains(self.filter.value.as_str()))
-            .collect::<Vec<&Repository>>();
-
-        filtered_repositories.sort_by(|r1, r2| {
-            let r2_name = r2.name();
-            r1.name().cmp(&r2_name)
-        });
-
-        filtered_repositories
+            .filter_map(|r| {
+                let name = r.name();
+                let mut total = 0u32;
+                for (pattern, min_score) in &patterns {
+                    match pattern.score(Utf32Str::new(&name, &mut buf), &mut matcher) {
+                        Some(s) if s >= *min_score => total += s,
+                        _ => return None,
+                    }
+                }
+                Some((r, total))
+            })
+            .collect();
+        scored.sort_by(|a, b| b.1.cmp(&a.1));
+        scored.into_iter().map(|(r, _)| r).collect()
     }
 
     fn get_state(&mut self) -> &mut ListState {

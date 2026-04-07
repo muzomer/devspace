@@ -469,7 +469,7 @@ dependencies = [
 
 [[package]]
 name = "devspace"
-version = "0.3.4"
+version = "0.3.5"
 dependencies = [
  "arboard",
  "assert_cmd",
@@ -480,6 +480,7 @@ dependencies = [
  "expand-tilde",
  "git2",
  "lazy_static",
+ "nucleo-matcher",
  "pretty_assertions",
  "ratatui",
  "rayon",
@@ -1170,6 +1171,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "nucleo-matcher"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf33f538733d1a5a3494b836ba913207f14d9d4a1d3cd67030c5061bdd2cac85"
+dependencies = [
+ "memchr",
+ "unicode-segmentation",
+]
+
+[[package]]
 name = "num-traits"
 version = "0.2.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1323,7 +1334,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d8fae84b431384b68627d0f9b3b1245fcf9f46f6c0e3dc902e9dce64edd1967"
 dependencies = [
  "libc",
- "windows-sys 0.48.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -1607,7 +1618,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.9.4",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

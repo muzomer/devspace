@@ -3,6 +3,7 @@ mod cli;
 mod components;
 mod dirs;
 mod git;
+pub mod keymap;
 pub mod logs;
 
 use std::io;
