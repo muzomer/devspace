@@ -12,6 +12,7 @@ pub struct CreateWorktreeComponent {
     character_index: usize,
     pub new_worktree_name: String,
     repo_name: String,
+    pub base_branch_hint: Option<String>,
 }
 
 impl CreateWorktreeComponent {
@@ -20,6 +21,7 @@ impl CreateWorktreeComponent {
             character_index: 0,
             new_worktree_name: String::new(),
             repo_name,
+            base_branch_hint: None,
         }
     }
 
@@ -47,10 +49,11 @@ impl CreateWorktreeComponent {
         let inner_area = outer_block.inner(area);
         outer_block.render(area, frame.buffer_mut());
 
-        let [_, label_area, input_area] = Layout::vertical([
+        let [_, label_area, input_area, hint_area] = Layout::vertical([
             Constraint::Length(1),
             Constraint::Length(1),
             Constraint::Length(3),
+            Constraint::Length(1),
         ])
         .horizontal_margin(4)
         .areas(inner_area);
@@ -65,6 +68,12 @@ impl CreateWorktreeComponent {
                     .padding(Padding::horizontal(1)),
             )
             .render(input_area, frame.buffer_mut());
+
+        if let Some(hint) = &self.base_branch_hint {
+            Paragraph::new(hint.as_str())
+                .style(Style::new().fg(Color::DarkGray))
+                .render(hint_area, frame.buffer_mut());
+        }
 
         // input_area: border(1) + padding(1) = offset 2; y+1 skips top border row
         frame.set_cursor_position((

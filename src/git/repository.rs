@@ -46,7 +46,7 @@ impl Repository {
         })?;
 
         // If a remote branch with the same name exists, base the new worktree on it.
-        // Otherwise fall back to the current HEAD of the repository.
+        // Otherwise fall back to the repository's default branch, then HEAD.
         let remote_branch_name = format!("origin/{}", worktree_name);
         let local_branch =
             if let Ok(remote_branch) = self.0.find_branch(&remote_branch_name, git2::BranchType::Remote) {
@@ -73,7 +73,14 @@ impl Repository {
                 };
                 Some(branch)
             } else {
-                None
+                // No matching remote branch — base on the default branch if available
+                self.find_default_branch_name()
+                    .and_then(|default_name| {
+                        let remote_name = format!("origin/{}", default_name);
+                        let default_branch = self.0.find_branch(&remote_name, git2::BranchType::Remote).ok()?;
+                        let commit = default_branch.get().peel_to_commit().ok()?;
+                        self.0.branch(worktree_name, &commit, false).ok()
+                    })
             };
 
         let mut create_worktree_options = git2::WorktreeAddOptions::new();
@@ -105,6 +112,38 @@ impl Repository {
             git_worktree: created_worktree,
             has_remote_branch: branch.upstream().is_ok(),
         })
+    }
+
+    /// Returns the short name of the default remote branch (e.g. "main"), by checking
+    /// `refs/remotes/origin/HEAD` first, then falling back to common names.
+    fn find_default_branch_name(&self) -> Option<String> {
+        if let Ok(head_ref) = self.0.find_reference("refs/remotes/origin/HEAD") {
+            if let Ok(resolved) = head_ref.resolve() {
+                if let Some(name) = resolved.shorthand() {
+                    let short = name.strip_prefix("origin/").unwrap_or(name).to_string();
+                    return Some(short);
+                }
+            }
+        }
+        for default in &["main", "master"] {
+            let remote_name = format!("origin/{}", default);
+            if self.0.find_branch(&remote_name, git2::BranchType::Remote).is_ok() {
+                return Some(default.to_string());
+            }
+        }
+        None
+    }
+
+    /// Returns a human-readable description of which branch a new worktree would be based on.
+    pub fn resolve_base_branch(&self, worktree_name: &str) -> String {
+        let remote_branch_name = format!("origin/{}", worktree_name);
+        if self.0.find_branch(&remote_branch_name, git2::BranchType::Remote).is_ok() {
+            return format!("Will track {}", remote_branch_name);
+        }
+        if let Some(default_name) = self.find_default_branch_name() {
+            return format!("Will be created from {} (default branch)", default_name);
+        }
+        "Will be created from HEAD".to_string()
     }
 
     pub fn name(&self) -> String {

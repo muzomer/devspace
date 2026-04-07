@@ -74,7 +74,8 @@ impl App {
         }
 
         if let Focus::CreateWorktree = self.focus {
-            let popup_area = self.popup_area(full_area, 55, 30);
+            let [popup_area] = Layout::vertical([Constraint::Length(9)]).flex(Flex::Center).areas(full_area);
+            let [popup_area] = Layout::horizontal([Constraint::Percentage(55)]).flex(Flex::Center).areas(popup_area);
             self.create_worktree.draw(frame, popup_area);
         }
 
@@ -237,7 +238,20 @@ impl App {
                 self.mode = InputMode::Normal;
                 EventState::Consumed
             }
-            _ => self.create_worktree.handle_action(action),
+            _ => {
+                let result = self.create_worktree.handle_action(action);
+                if result == EventState::Consumed {
+                    let name = self.create_worktree.new_worktree_name.clone();
+                    self.create_worktree.base_branch_hint = if name.is_empty() {
+                        None
+                    } else {
+                        self.repositories_component
+                            .selected_repository()
+                            .map(|r| r.resolve_base_branch(&name))
+                    };
+                }
+                result
+            }
         }
     }
 
