@@ -88,7 +88,8 @@ impl App {
         }
 
         if let Focus::Confirm = self.focus {
-            let popup_area = self.popup_area(full_area, 60, 30);
+            let [popup_area] = Layout::vertical([Constraint::Length(8)]).flex(Flex::Center).areas(full_area);
+            let [popup_area] = Layout::horizontal([Constraint::Percentage(55)]).flex(Flex::Center).areas(popup_area);
             self.confirm_component.draw(frame, popup_area);
         }
 
