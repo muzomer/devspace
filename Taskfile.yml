@@ -19,18 +19,17 @@ tasks:
   setup-demo-env:
     desc: "Setup the demo directories"
     cmd: |-
-      mkdir /var/tmp/demo
-      pushd /var/tmp/demo
+      test -d demos/repos-dir || mkdir demos/repos-dir
+      pushd demos/repos-dir
       rm -rvf *
 
-      for demo_repo in backend-repo frontend-repo infra-repo
+      for demo_repo in first-repo second-repo
       do
-        git init repositories_dir/$demo_repo --initial-branch main
-        pushd repositories_dir/$demo_repo
-        git commit --allow-empty -m 'initial commit'
-        popd
+        git clone git@github.com:muzomer/${demo_repo}.git
       done
-      mkdir worktrees_dir
+      popd
+      test -d demos/worktrees-dir && rm -rvf demos/worktrees-dir
+      mkdir demos/worktrees-dir
 
   run-demo:
     desc: "Command to execute demo from the demos directory"

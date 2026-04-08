@@ -34,16 +34,22 @@ pub struct Args {
 impl Args {
     pub fn new() -> Self {
         let mut args = Self::parse();
-        args.repos_dir = expand_tilde::expand_tilde(&args.repos_dir)
-            .expect("Could not expand the ~ in the repos_dir")
-            .to_str()
-            .expect("Could not convert the expanded repos_dir to a string")
-            .to_string();
-        args.worktrees_dir = expand_tilde::expand_tilde(&args.worktrees_dir)
-            .expect("Could not expand the ~ in the worktrees_dir")
-            .to_str()
-            .expect("Could not convert the expanded worktrees_dir to a string")
-            .to_string();
+        args.repos_dir = std::fs::canonicalize(
+            expand_tilde::expand_tilde(&args.repos_dir)
+                .expect("Could not expand the ~ in the repos_dir"),
+        )
+        .expect("Could not resolve repos_dir to an absolute path")
+        .to_str()
+        .expect("Could not convert the expanded repos_dir to a string")
+        .to_string();
+        args.worktrees_dir = std::fs::canonicalize(
+            expand_tilde::expand_tilde(&args.worktrees_dir)
+                .expect("Could not expand the ~ in the worktrees_dir"),
+        )
+        .expect("Could not resolve worktrees_dir to an absolute path")
+        .to_str()
+        .expect("Could not convert the expanded worktrees_dir to a string")
+        .to_string();
         args
     }
 }

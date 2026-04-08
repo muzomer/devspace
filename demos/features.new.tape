@@ -7,9 +7,9 @@ Set BorderRadius 8
 Set TypingSpeed 75ms
 
 Hide
-Type "export DEVSPACE_REPOS_DIR=/repositories_dir"
+Type "export DEVSPACE_REPOS_DIR=./repos-dir"
 Enter
-Type "export DEVSPACE_WORKTREES_DIR=/worktrees_dir"
+Type "export DEVSPACE_WORKTREES_DIR=./worktrees-dir"
 Enter
 Show
 
