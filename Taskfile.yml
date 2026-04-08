@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 tasks:
   build-demo-image:
@@ -12,13 +12,14 @@ tasks:
       - docker run -v .:/devspace --entrypoint bash -it devspace-demo:latest
 
   generate-gif:
-      desc: "Run vhs on tape file to generate gif. Pass the path for the .tape file"
-      cmds:
-        - docker run -v .:/devspace -w /devspace/demos/ -it devspace-demo:latest {{.CLI_ARGS}}
+    desc: "Run vhs on tape file to generate gif. Pass the path for the .tape file"
+    cmds:
+      - docker run -v .:/devspace -w /devspace/demos/ -it devspace-demo:latest {{.CLI_ARGS}}
 
   setup-demo-env:
     desc: "Setup the demo directories"
     cmd: |-
+      mkdir /var/tmp/demo
       pushd /var/tmp/demo
       rm -rvf *
 

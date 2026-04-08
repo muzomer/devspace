@@ -4,6 +4,7 @@
 </p>
 
 <p align="center">
+  <a href="#features">Features</a> •
   <a href="#workflow">Workflow</a> •
   <a href="#installation">Installation</a> •
   <a href="#usage">Usage</a> •
@@ -11,6 +12,22 @@
 </p>
 
 ![Create New Git Worktrees](demos/create_new_worktrees.gif)
+
+# Features
+
+- **Worktree management** — create, delete, and navigate git worktrees across all your repositories from a single TUI.
+- **Live status indicators** — each worktree shows its remote branch state at a glance:
+  - `✔` remote branch exists (green)
+  - `✘` branch merged or deleted remotely (red)
+  - `⬆` never pushed to remote (yellow)
+  - `*` dirty working tree — uncommitted changes (yellow)
+- **Smart branch base** — when creating a worktree, devspace automatically bases it on a matching remote branch if one exists, or falls back to the default branch (`main`/`master`).
+- **Fuzzy search** — filter worktrees and repositories in real time with a fuzzy matcher (`i` or `/` to enter filter mode).
+- **GitHub PR integration** — press `p`, paste a GitHub PR URL, and devspace fetches the branch name, warns you if the PR is already merged, and opens the creation form pre-filled.
+- **Auto-clone** — if the repository for a PR URL is not found locally, devspace offers to clone it via SSH before creating the worktree.
+- **Copy path to clipboard** — press `Enter` on any worktree to copy its full path to the clipboard and exit, ready to `cd` into it.
+- **Context-sensitive help** — press `?` from any screen to see all available keybindings for the current context.
+- **Vi-style navigation** — `j`/`k`, `g`/`G`, `Tab` between filter and list; familiar and fast.
 
 # Workflow
 
