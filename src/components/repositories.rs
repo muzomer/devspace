@@ -142,6 +142,10 @@ impl RepositoriesComponent {
         }
     }
 
+    pub fn add_repository(&mut self, repo: Repository) {
+        self.repositories.push(repo);
+    }
+
     pub fn selected_repository(&mut self) -> Option<&Repository> {
         match self.selected_index {
             Some(index) => {

@@ -184,7 +184,10 @@ impl WorktreesComponent {
             return false;
         }
         self.filter.clear();
-        let index = self.filtered_items().iter().position(|wt| wt.name() == branch);
+        let index = self
+            .filtered_items()
+            .iter()
+            .position(|wt| wt.name() == branch);
         if let Some(idx) = index {
             self.selected_index = Some(idx);
             self.state.select(Some(idx));
@@ -260,7 +263,9 @@ fn worktree_to_list_item(
 
     let indicator_span = Span::styled(
         format!("{} ", remote_indicator),
-        Style::default().fg(indicator_color).add_modifier(Modifier::BOLD),
+        Style::default()
+            .fg(indicator_color)
+            .add_modifier(Modifier::BOLD),
     );
 
     let path = path.trim_end_matches('/');
@@ -282,7 +287,13 @@ fn worktree_to_list_item(
         );
         if is_dirty {
             let dirty_span = Span::styled("*", Style::default().fg(Color::Yellow));
-            Line::from(vec![indicator_span, repo_span, sep_span, branch_span, dirty_span])
+            Line::from(vec![
+                indicator_span,
+                repo_span,
+                sep_span,
+                branch_span,
+                dirty_span,
+            ])
         } else {
             Line::from(vec![indicator_span, repo_span, sep_span, branch_span])
         }

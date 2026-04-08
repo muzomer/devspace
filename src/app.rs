@@ -24,6 +24,12 @@ pub enum Focus {
     PrWorktree,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum ConfirmAction {
+    DeleteWorktree,
+    CloneRepo,
+}
+
 pub struct App {
     worktrees_component: WorktreesComponent,
     repositories_component: RepositoriesComponent,
@@ -35,6 +41,8 @@ pub struct App {
     focus: Focus,
     previous_focus: Focus,
     mode: InputMode,
+    confirm_action: ConfirmAction,
+    pending_pr: Option<(github::PrUrl, github::PrInfo)>,
 }
 
 impl App {
@@ -49,13 +57,15 @@ impl App {
             worktrees_component,
             repositories_component,
             create_worktree: CreateWorktreeComponent::new(String::new()),
-            confirm_component: ConfirmComponent::new(String::new()),
+            confirm_component: ConfirmComponent::new(String::new(), String::new(), String::new()),
             help_component: HelpComponent::new(vec![]),
             pr_worktree_component: PrWorktreeComponent::new(),
             focus: Focus::Worktrees,
             previous_focus: Focus::Worktrees,
             args,
             mode: InputMode::Normal,
+            confirm_action: ConfirmAction::DeleteWorktree,
+            pending_pr: None,
         }
     }
 
@@ -78,18 +88,27 @@ impl App {
             );
         if show_repos {
             let popup_area = self.popup_area(full_area, 50, 50);
-            self.repositories_component.draw(frame, popup_area, self.mode);
+            self.repositories_component
+                .draw(frame, popup_area, self.mode);
         }
 
         if let Focus::CreateWorktree = self.focus {
-            let [popup_area] = Layout::vertical([Constraint::Length(9)]).flex(Flex::Center).areas(full_area);
-            let [popup_area] = Layout::horizontal([Constraint::Percentage(55)]).flex(Flex::Center).areas(popup_area);
+            let [popup_area] = Layout::vertical([Constraint::Length(9)])
+                .flex(Flex::Center)
+                .areas(full_area);
+            let [popup_area] = Layout::horizontal([Constraint::Percentage(55)])
+                .flex(Flex::Center)
+                .areas(popup_area);
             self.create_worktree.draw(frame, popup_area);
         }
 
         if let Focus::Confirm = self.focus {
-            let [popup_area] = Layout::vertical([Constraint::Length(8)]).flex(Flex::Center).areas(full_area);
-            let [popup_area] = Layout::horizontal([Constraint::Percentage(55)]).flex(Flex::Center).areas(popup_area);
+            let [popup_area] = Layout::vertical([Constraint::Length(8)])
+                .flex(Flex::Center)
+                .areas(full_area);
+            let [popup_area] = Layout::horizontal([Constraint::Percentage(55)])
+                .flex(Flex::Center)
+                .areas(popup_area);
             self.confirm_component.draw(frame, popup_area);
         }
 
@@ -100,8 +119,12 @@ impl App {
         }
 
         if let Focus::PrWorktree = self.focus {
-            let [popup_area] = Layout::vertical([Constraint::Length(9)]).flex(Flex::Center).areas(full_area);
-            let [popup_area] = Layout::horizontal([Constraint::Percentage(70)]).flex(Flex::Center).areas(popup_area);
+            let [popup_area] = Layout::vertical([Constraint::Length(9)])
+                .flex(Flex::Center)
+                .areas(full_area);
+            let [popup_area] = Layout::horizontal([Constraint::Percentage(70)])
+                .flex(Flex::Center)
+                .areas(popup_area);
             self.pr_worktree_component.draw(frame, popup_area);
         }
     }
@@ -152,7 +175,12 @@ impl App {
             }
             Action::DeleteWithConfirmation => {
                 if let Some(path) = self.worktrees_component.selected_worktree_path() {
-                    self.confirm_component = ConfirmComponent::new(path);
+                    self.confirm_component = ConfirmComponent::new(
+                        "Delete Worktree".to_string(),
+                        "Delete this worktree?".to_string(),
+                        path,
+                    );
+                    self.confirm_action = ConfirmAction::DeleteWorktree;
                     self.focus = Focus::Confirm;
                 }
                 EventState::Consumed
@@ -280,15 +308,19 @@ impl App {
     fn handle_confirm_action(&mut self, action: Action) -> EventState {
         match action {
             Action::Quit => EventState::Exit,
-            Action::Select => {
-                match self.worktrees_component.delete_selected_worktree() {
-                    Ok(()) => self.worktrees_component.last_error = None,
-                    Err(e) => self.worktrees_component.last_error = Some(format!("{:#}", e)),
+            Action::Select => match self.confirm_action {
+                ConfirmAction::DeleteWorktree => {
+                    match self.worktrees_component.delete_selected_worktree() {
+                        Ok(()) => self.worktrees_component.last_error = None,
+                        Err(e) => self.worktrees_component.last_error = Some(format!("{:#}", e)),
+                    }
+                    self.focus = Focus::Worktrees;
+                    EventState::Consumed
                 }
-                self.focus = Focus::Worktrees;
-                EventState::Consumed
-            }
+                ConfirmAction::CloneRepo => self.handle_clone_confirmed(),
+            },
             Action::ClosePopup | Action::ExitInsertMode => {
+                self.pending_pr = None;
                 self.focus = Focus::Worktrees;
                 EventState::Consumed
             }
@@ -329,14 +361,61 @@ impl App {
             }
         };
 
-        if !self.repositories_component.select_repository_by_name(&pr_url.repo) {
-            self.pr_worktree_component.set_error(format!(
-                "Repository '{}' not found in repos directory",
-                pr_url.repo
-            ));
+        if !self
+            .repositories_component
+            .select_repository_by_name(&pr_url.repo)
+        {
+            self.pending_pr = Some((pr_url.clone(), pr_info));
+            self.confirm_component = ConfirmComponent::new(
+                "Clone Repository".to_string(),
+                format!("Repository '{}' not found. Clone from GitHub?", pr_url.repo),
+                format!("git@github.com:{}/{}.git", pr_url.owner, pr_url.repo),
+            );
+            self.confirm_action = ConfirmAction::CloneRepo;
+            self.pr_worktree_component.reset();
+            self.focus = Focus::Confirm;
+            self.mode = InputMode::Normal;
             return EventState::Consumed;
         }
 
+        self.open_worktree_for_pr(pr_info)
+    }
+
+    fn handle_clone_confirmed(&mut self) -> EventState {
+        let (pr_url, pr_info) = match self.pending_pr.take() {
+            Some(p) => p,
+            None => {
+                self.focus = Focus::Worktrees;
+                return EventState::Consumed;
+            }
+        };
+
+        if let Err(e) = github::clone_repository(&pr_url.owner, &pr_url.repo, &self.args.repos_dir)
+        {
+            self.worktrees_component.last_error = Some(format!("{:#}", e));
+            self.focus = Focus::Worktrees;
+            return EventState::Consumed;
+        }
+
+        let repo_path = format!("{}/{}", self.args.repos_dir, pr_url.repo);
+        match git::Repository::from_path(&repo_path, false) {
+            Ok(repo) => {
+                self.repositories_component.add_repository(repo);
+                self.repositories_component
+                    .select_repository_by_name(&pr_url.repo);
+            }
+            Err(e) => {
+                self.worktrees_component.last_error =
+                    Some(format!("Cloned but failed to load repo: {:#}", e));
+                self.focus = Focus::Worktrees;
+                return EventState::Consumed;
+            }
+        }
+
+        self.open_worktree_for_pr(pr_info)
+    }
+
+    fn open_worktree_for_pr(&mut self, pr_info: github::PrInfo) -> EventState {
         let branch = pr_info.branch_name.clone();
 
         // Worktree already exists — select it and close popup
@@ -358,13 +437,14 @@ impl App {
             None
         };
 
-        let base_branch_hint = self
-            .repositories_component
-            .selected_repository()
-            .map(|r| r.resolve_base_branch(&branch));
+        let (repo_name, base_branch_hint) =
+            if let Some(r) = self.repositories_component.selected_repository() {
+                (r.name(), Some(r.resolve_base_branch(&branch)))
+            } else {
+                (String::new(), None)
+            };
 
-        self.create_worktree =
-            CreateWorktreeComponent::new_with_branch(pr_url.repo.clone(), branch, warning);
+        self.create_worktree = CreateWorktreeComponent::new_with_branch(repo_name, branch, warning);
         self.create_worktree.base_branch_hint = base_branch_hint;
 
         self.pr_worktree_component.reset();
@@ -439,7 +519,7 @@ impl App {
             ],
             (Focus::Confirm, _) => vec![
                 HelpEntry::Section("Keybindings"),
-                HelpEntry::Binding("Enter", "Confirm delete"),
+                HelpEntry::Binding("Enter", "Confirm"),
                 HelpEntry::Binding("Esc", "Cancel"),
                 HelpEntry::Binding("q / Ctrl+C", "Quit"),
             ],

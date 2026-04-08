@@ -38,7 +38,11 @@ impl HelpComponent {
         // borders (2) + horizontal margin (2*2)
         let width = content_width + 6;
         // borders (2) + vertical margin (2*1) + one extra blank line per Section
-        let section_count = self.entries.iter().filter(|e| matches!(e, HelpEntry::Section(_))).count() as u16;
+        let section_count = self
+            .entries
+            .iter()
+            .filter(|e| matches!(e, HelpEntry::Section(_)))
+            .count() as u16;
         let height = self.entries.len() as u16 + section_count + 4;
         (width, height)
     }
@@ -67,7 +71,10 @@ impl HelpComponent {
                     Span::raw(*desc),
                 ])],
                 HelpEntry::Section(title) => vec![
-                    Line::from(Span::styled(*title, Style::new().white().bold().underlined())),
+                    Line::from(Span::styled(
+                        *title,
+                        Style::new().white().bold().underlined(),
+                    )),
                     Line::raw(""),
                 ],
                 HelpEntry::Blank => vec![Line::raw("")],

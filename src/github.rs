@@ -2,12 +2,14 @@ use color_eyre::eyre::{self, WrapErr};
 use std::io;
 use std::process::Command;
 
+#[derive(Clone)]
 pub struct PrUrl {
     pub owner: String,
     pub repo: String,
     pub number: u64,
 }
 
+#[derive(Clone)]
 pub struct PrInfo {
     pub branch_name: String,
     pub is_merged: bool,
@@ -22,9 +24,7 @@ pub fn parse_pr_url(url: &str) -> eyre::Result<PrUrl> {
 
     let parts: Vec<&str> = path.splitn(4, '/').collect();
     if parts.len() < 4 || parts[2] != "pull" {
-        eyre::bail!(
-            "Invalid GitHub PR URL — expected: https://github.com/owner/repo/pull/NUMBER"
-        );
+        eyre::bail!("Invalid GitHub PR URL — expected: https://github.com/owner/repo/pull/NUMBER");
     }
 
     let number: u64 = parts[3]
@@ -52,7 +52,10 @@ pub fn fetch_pr_info(pr: &PrUrl) -> eyre::Result<PrInfo> {
             // gh is installed but the request failed
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stderr = stderr.trim();
-            if stderr.contains("authentication") || stderr.contains("not logged") || stderr.is_empty() {
+            if stderr.contains("authentication")
+                || stderr.contains("not logged")
+                || stderr.is_empty()
+            {
                 eyre::bail!("GitHub auth failed — set GITHUB_TOKEN or run `gh auth login`");
             }
             eyre::bail!("GitHub API error: {}", stderr);
@@ -93,6 +96,21 @@ fn fetch_via_ureq(pr: &PrUrl, token: &str) -> eyre::Result<PrInfo> {
         .wrap_err("Failed to read GitHub API response")?;
 
     parse_pr_json(&bytes)
+}
+
+/// Clones a GitHub repository into `<repos_dir>/<repo>` using SSH.
+pub fn clone_repository(owner: &str, repo: &str, repos_dir: &str) -> eyre::Result<()> {
+    let url = format!("git@github.com:{}/{}.git", owner, repo);
+    let dest = format!("{}/{}", repos_dir, repo);
+    let output = Command::new("git")
+        .args(["clone", &url, &dest])
+        .output()
+        .wrap_err("Failed to run git clone")?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        eyre::bail!("git clone failed: {}", stderr.trim());
+    }
+    Ok(())
 }
 
 fn parse_pr_json(bytes: &[u8]) -> eyre::Result<PrInfo> {

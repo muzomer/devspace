@@ -9,12 +9,18 @@ use ratatui::{
 use super::{Action, EventState};
 
 pub struct ConfirmComponent {
-    pub pending_path: String,
+    pub title: String,
+    pub label: String,
+    pub detail: String,
 }
 
 impl ConfirmComponent {
-    pub fn new(pending_path: String) -> Self {
-        Self { pending_path }
+    pub fn new(title: String, label: String, detail: String) -> Self {
+        Self {
+            title,
+            label,
+            detail,
+        }
     }
 
     pub fn draw(&mut self, frame: &mut Frame, area: Rect) {
@@ -23,13 +29,13 @@ impl ConfirmComponent {
         let outer_block = Block::bordered()
             .border_type(BorderType::Rounded)
             .border_style(super::BORDER_STYLE)
-            .title(Line::from(" Delete Worktree ").style(Style::new().fg(Color::Gray)))
+            .title(Line::from(format!(" {} ", self.title)).style(Style::new().fg(Color::Gray)))
             .title_bottom(keybinding_hint());
 
         let inner_area = outer_block.inner(area);
         outer_block.render(area, frame.buffer_mut());
 
-        let [_, label_area, _, path_area] = Layout::vertical([
+        let [_, label_area, _, detail_area] = Layout::vertical([
             Constraint::Length(1),
             Constraint::Length(1),
             Constraint::Length(1),
@@ -38,10 +44,10 @@ impl ConfirmComponent {
         .horizontal_margin(4)
         .areas(inner_area);
 
-        Paragraph::new("Delete this worktree?").render(label_area, frame.buffer_mut());
-        Paragraph::new(self.pending_path.as_str())
+        Paragraph::new(self.label.as_str()).render(label_area, frame.buffer_mut());
+        Paragraph::new(self.detail.as_str())
             .style(Style::default().fg(Color::Red).bold())
-            .render(path_area, frame.buffer_mut());
+            .render(detail_area, frame.buffer_mut());
     }
 
     pub fn handle_action(&mut self, _action: Action) -> EventState {
