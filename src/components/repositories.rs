@@ -128,6 +128,20 @@ impl RepositoriesComponent {
         matches!(self.focus, Focus::Filter)
     }
 
+    /// Clears any active filter, finds the repository by name, and selects it.
+    /// Returns `true` if found, `false` otherwise.
+    pub fn select_repository_by_name(&mut self, name: &str) -> bool {
+        self.filter.clear();
+        let index = self.filtered_items().iter().position(|r| r.name() == name);
+        if let Some(idx) = index {
+            self.selected_index = Some(idx);
+            self.state.select(Some(idx));
+            true
+        } else {
+            false
+        }
+    }
+
     pub fn selected_repository(&mut self) -> Option<&Repository> {
         match self.selected_index {
             Some(index) => {

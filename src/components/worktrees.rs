@@ -176,6 +176,24 @@ impl WorktreesComponent {
         matches!(self.focus, Focus::Filter)
     }
 
+    /// Clears any active filter, finds the worktree matching the given branch name,
+    /// and selects it. Returns `true` if found, `false` otherwise.
+    pub fn select_worktree_by_branch(&mut self, branch: &str) -> bool {
+        let exists = self.worktrees.iter().any(|wt| wt.name() == branch);
+        if !exists {
+            return false;
+        }
+        self.filter.clear();
+        let index = self.filtered_items().iter().position(|wt| wt.name() == branch);
+        if let Some(idx) = index {
+            self.selected_index = Some(idx);
+            self.state.select(Some(idx));
+            true
+        } else {
+            false
+        }
+    }
+
     pub fn add(&mut self, new_worktree: git::Worktree) {
         let new_worktree_path = new_worktree.path().to_string();
         self.worktrees.push(new_worktree);

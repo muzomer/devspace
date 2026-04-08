@@ -3,12 +3,14 @@ mod create_worktree;
 mod filter;
 mod help;
 mod list;
+mod pr_worktree;
 mod repositories;
 mod worktrees;
 
 pub use confirm::ConfirmComponent;
 pub use create_worktree::CreateWorktreeComponent;
 pub use help::{HelpComponent, HelpEntry};
+pub use pr_worktree::PrWorktreeComponent;
 use ratatui::style::{palette::tailwind::SLATE, Color, Modifier, Style};
 pub use repositories::RepositoriesComponent;
 pub use worktrees::WorktreesComponent;
@@ -34,6 +36,7 @@ pub enum Action {
     DeleteWithConfirmation,
     ForceDelete,
     OpenRepositories,
+    OpenPrWorktree,
     ClosePopup,
     EnterInsertMode,
     ExitInsertMode,

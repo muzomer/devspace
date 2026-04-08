@@ -8,9 +8,9 @@ use crate::{
     cli,
     components::{
         Action, ConfirmComponent, CreateWorktreeComponent, EventState, HelpComponent, HelpEntry,
-        RepositoriesComponent, WorktreesComponent,
+        PrWorktreeComponent, RepositoriesComponent, WorktreesComponent,
     },
-    git,
+    git, github,
     keymap::{self, InputMode},
 };
 
@@ -21,6 +21,7 @@ pub enum Focus {
     CreateWorktree,
     Confirm,
     Help,
+    PrWorktree,
 }
 
 pub struct App {
@@ -29,6 +30,7 @@ pub struct App {
     create_worktree: CreateWorktreeComponent,
     confirm_component: ConfirmComponent,
     help_component: HelpComponent,
+    pr_worktree_component: PrWorktreeComponent,
     args: cli::Args,
     focus: Focus,
     previous_focus: Focus,
@@ -49,6 +51,7 @@ impl App {
             create_worktree: CreateWorktreeComponent::new(String::new()),
             confirm_component: ConfirmComponent::new(String::new()),
             help_component: HelpComponent::new(vec![]),
+            pr_worktree_component: PrWorktreeComponent::new(),
             focus: Focus::Worktrees,
             previous_focus: Focus::Worktrees,
             args,
@@ -94,6 +97,12 @@ impl App {
             let popup_area = self.popup_area_fixed(full_area, w, h);
             self.help_component.draw(frame, popup_area);
         }
+
+        if let Focus::PrWorktree = self.focus {
+            let [popup_area] = Layout::vertical([Constraint::Length(9)]).flex(Flex::Center).areas(full_area);
+            let [popup_area] = Layout::horizontal([Constraint::Percentage(70)]).flex(Flex::Center).areas(popup_area);
+            self.pr_worktree_component.draw(frame, popup_area);
+        }
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) -> EventState {
@@ -108,6 +117,7 @@ impl App {
             Focus::CreateWorktree => self.handle_create_worktree_action(action),
             Focus::Confirm => self.handle_confirm_action(action),
             Focus::Help => self.handle_help_action(action),
+            Focus::PrWorktree => self.handle_pr_worktree_action(action),
         }
     }
 
@@ -124,6 +134,12 @@ impl App {
             Action::OpenRepositories => {
                 self.focus = Focus::Repositories;
                 self.mode = InputMode::Normal;
+                EventState::Consumed
+            }
+            Action::OpenPrWorktree => {
+                self.pr_worktree_component.reset();
+                self.focus = Focus::PrWorktree;
+                self.mode = InputMode::Insert;
                 EventState::Consumed
             }
             Action::Delete | Action::ForceDelete => {
@@ -279,6 +295,83 @@ impl App {
         }
     }
 
+    fn handle_pr_worktree_action(&mut self, action: Action) -> EventState {
+        match action {
+            Action::Quit => EventState::Exit,
+            Action::ClosePopup | Action::ExitInsertMode => {
+                self.pr_worktree_component.reset();
+                self.focus = Focus::Worktrees;
+                self.mode = InputMode::Normal;
+                EventState::Consumed
+            }
+            Action::Select => self.handle_pr_url_submission(),
+            _ => self.pr_worktree_component.handle_action(action),
+        }
+    }
+
+    fn handle_pr_url_submission(&mut self) -> EventState {
+        let url = self.pr_worktree_component.current_url().to_string();
+
+        let pr_url = match github::parse_pr_url(&url) {
+            Ok(p) => p,
+            Err(e) => {
+                self.pr_worktree_component.set_error(format!("{:#}", e));
+                return EventState::Consumed;
+            }
+        };
+
+        let pr_info = match github::fetch_pr_info(&pr_url) {
+            Ok(info) => info,
+            Err(e) => {
+                self.pr_worktree_component.set_error(format!("{:#}", e));
+                return EventState::Consumed;
+            }
+        };
+
+        if !self.repositories_component.select_repository_by_name(&pr_url.repo) {
+            self.pr_worktree_component.set_error(format!(
+                "Repository '{}' not found in repos directory",
+                pr_url.repo
+            ));
+            return EventState::Consumed;
+        }
+
+        let branch = pr_info.branch_name.clone();
+
+        // Worktree already exists — select it and close popup
+        if self.worktrees_component.select_worktree_by_branch(&branch) {
+            self.pr_worktree_component.reset();
+            self.focus = Focus::Worktrees;
+            self.mode = InputMode::Normal;
+            if pr_info.is_merged {
+                self.worktrees_component.last_error =
+                    Some("PR is merged — existing worktree selected".to_string());
+            }
+            return EventState::Consumed;
+        }
+
+        // No worktree yet — open CreateWorktree with branch pre-filled
+        let warning = if pr_info.is_merged {
+            Some("Warning: PR is merged, branch may be deleted on remote".to_string())
+        } else {
+            None
+        };
+
+        let base_branch_hint = self
+            .repositories_component
+            .selected_repository()
+            .map(|r| r.resolve_base_branch(&branch));
+
+        self.create_worktree =
+            CreateWorktreeComponent::new_with_branch(pr_url.repo.clone(), branch, warning);
+        self.create_worktree.base_branch_hint = base_branch_hint;
+
+        self.pr_worktree_component.reset();
+        self.focus = Focus::CreateWorktree;
+        self.mode = InputMode::Insert;
+        EventState::Consumed
+    }
+
     fn help_bindings_for(focus: Focus, mode: InputMode) -> Vec<HelpEntry> {
         match (focus, mode) {
             (Focus::Worktrees, InputMode::Normal) => vec![
@@ -290,6 +383,7 @@ impl App {
                 HelpEntry::Binding("i / /", "Enter filter mode"),
                 HelpEntry::Binding("Tab", "Toggle filter / list"),
                 HelpEntry::Binding("n", "New worktree (pick repo)"),
+                HelpEntry::Binding("p", "New worktree from PR URL"),
                 HelpEntry::Binding("d", "Delete with confirmation"),
                 HelpEntry::Binding("D", "Force delete"),
                 HelpEntry::Binding("Enter", "Copy path to clipboard & exit"),
@@ -347,6 +441,13 @@ impl App {
                 HelpEntry::Binding("Enter", "Confirm delete"),
                 HelpEntry::Binding("Esc", "Cancel"),
                 HelpEntry::Binding("q / Ctrl+C", "Quit"),
+            ],
+            (Focus::PrWorktree, _) => vec![
+                HelpEntry::Section("Keybindings"),
+                HelpEntry::Binding("Enter", "Fetch PR and open worktree"),
+                HelpEntry::Binding("Esc", "Cancel"),
+                HelpEntry::Binding("Backspace", "Delete character"),
+                HelpEntry::Binding("Ctrl+C", "Quit"),
             ],
             _ => vec![],
         }

@@ -3,6 +3,7 @@ mod cli;
 mod components;
 mod dirs;
 mod git;
+mod github;
 pub mod keymap;
 pub mod logs;
 

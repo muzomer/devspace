@@ -13,6 +13,7 @@ pub struct CreateWorktreeComponent {
     pub new_worktree_name: String,
     repo_name: String,
     pub base_branch_hint: Option<String>,
+    pub warning: Option<String>,
 }
 
 impl CreateWorktreeComponent {
@@ -22,6 +23,22 @@ impl CreateWorktreeComponent {
             new_worktree_name: String::new(),
             repo_name,
             base_branch_hint: None,
+            warning: None,
+        }
+    }
+
+    pub fn new_with_branch(
+        repo_name: String,
+        branch_name: String,
+        warning: Option<String>,
+    ) -> Self {
+        let character_index = branch_name.chars().count();
+        Self {
+            character_index,
+            new_worktree_name: branch_name,
+            repo_name,
+            base_branch_hint: None,
+            warning,
         }
     }
 
@@ -69,7 +86,11 @@ impl CreateWorktreeComponent {
             )
             .render(input_area, frame.buffer_mut());
 
-        if let Some(hint) = &self.base_branch_hint {
+        if let Some(warning) = &self.warning {
+            Paragraph::new(warning.as_str())
+                .style(Style::new().fg(Color::Yellow))
+                .render(hint_area, frame.buffer_mut());
+        } else if let Some(hint) = &self.base_branch_hint {
             Paragraph::new(hint.as_str())
                 .style(Style::new().fg(Color::DarkGray))
                 .render(hint_area, frame.buffer_mut());
