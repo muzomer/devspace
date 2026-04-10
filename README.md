@@ -5,7 +5,6 @@
 
 <p align="center">
   <a href="#features">Features</a> •
-  <a href="#workflow">Workflow</a> •
   <a href="#installation">Installation</a> •
   <a href="#usage">Usage</a> •
   <a href="#roadmap">Roadmap</a><br>
