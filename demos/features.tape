@@ -1,10 +1,12 @@
 Output features.gif
 
-Set FontSize 14
+Set FontSize 20
 Set Theme TokyoNight
 Set Padding 2
 Set BorderRadius 8
 Set TypingSpeed 75ms
+Set Width 1200
+Set Height 600
 
 Hide
 Type@0s "export DEVSPACE_REPOS_DIR=./repos-dir"
