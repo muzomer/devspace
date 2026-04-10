@@ -22,7 +22,7 @@ Sleep 2s
 # Launch devspace     #
 #######################
 
-Type@0s "devspace"
+Type@0s "cd $(devspace)"
 Sleep 1s
 Enter
 
@@ -41,6 +41,8 @@ Sleep 800ms
 
 # Hint shows "Will be created from HEAD" — type branch name
 Type@0s "feature-in-second-repo"
+Sleep 600ms
+Enter
 Sleep 600ms
 
 #############################################
@@ -66,10 +68,6 @@ Sleep 2s
 # Navigate the worktrees list
 #############################################
 
-Type "j"
-Sleep 500ms
-Type "j"
-Sleep 500ms
 Type "k"
 Sleep 500ms
 
@@ -78,10 +76,8 @@ Sleep 500ms
 #############################################
 
 Type "?"
-Sleep 1500ms
+Sleep 2s
 Escape
-Sleep 600ms
-
 
 #############################################
 # Create third worktree from PR (auto-clone)
@@ -92,6 +88,8 @@ Type "P"
 Sleep 1s
 
 Type@0s "https://github.com/muzomer/second-repo/pull/1"
+Sleep 500ms
+Enter
 Sleep 1s
 
 #############################################
@@ -99,14 +97,14 @@ Sleep 1s
 #############################################
 
 Type "i"
-Sleep 400ms
+Sleep 1s
 Type@0s "dev"
 Sleep 800ms
 Backspace
 Backspace
 Backspace
 Escape
-Sleep 600ms
+Sleep 1s
 
 #############################################
 # Delete a worktree (soft delete with confirm)
@@ -125,6 +123,14 @@ Sleep 1500ms
 
 Type "k"
 Sleep 400ms
+Enter
+Sleep 1s
+
+Type@0s "pwd"
+Enter
+Sleep 1s
+
+Type@0s "cd -"
 Enter
 Sleep 1s
 
