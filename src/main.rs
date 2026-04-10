@@ -14,8 +14,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     logs::initialize_logging()?;
     let mut app = app::App::new();
     let mut terminal = setup_terminal()?;
-    let _ = run_app(&mut terminal, &mut app);
+    let selected = run_app(&mut terminal, &mut app);
     let _ = restore_terminal(&mut terminal);
+    let path = match selected {
+        Ok(Some(path)) => path,
+        _ => ".".to_string(),
+    };
+    println!("{}", path);
     Ok(())
 }
 

@@ -1,7 +1,5 @@
 use crate::git::{self, RemoteStatus};
-use arboard::Clipboard;
 use color_eyre::eyre;
-use color_eyre::eyre::WrapErr;
 use nucleo_matcher::{
     pattern::{CaseMatching, Normalization, Pattern},
     Config, Matcher, Utf32Str,
@@ -16,7 +14,6 @@ use ratatui::{
     },
     Frame,
 };
-use tracing::debug;
 
 use super::{filter::FilterComponent, Action, EventState};
 use super::{
@@ -133,18 +130,13 @@ impl WorktreesComponent {
                 self.select(ItemOrder::Last);
                 EventState::Consumed
             }
-            Action::Select => match self.copy_path_of_selected_worktree() {
-                Ok(true) => {
-                    debug!("copied path of selected worktree");
-                    self.last_error = None;
+            Action::Select => {
+                if self.selected_worktree_path().is_some() {
                     EventState::Exit
-                }
-                Ok(false) => EventState::Consumed,
-                Err(e) => {
-                    self.last_error = Some(format!("{:#}", e));
+                } else {
                     EventState::Consumed
                 }
-            },
+            }
             Action::InsertChar(c) => {
                 self.filter.enter_char(c);
                 EventState::Consumed
@@ -228,25 +220,6 @@ impl WorktreesComponent {
         })
     }
 
-    fn copy_path_of_selected_worktree(&mut self) -> eyre::Result<bool> {
-        let path = match self.selected_worktree_path() {
-            Some(path) => path,
-            None => {
-                debug!("No worktree was selected. Nothing to copy to clipboard");
-                return Ok(false);
-            }
-        };
-
-        let mut clipboard = Clipboard::new().wrap_err("Could not access the clipboard")?;
-
-        clipboard
-            .set()
-            .text(&path)
-            .wrap_err_with(|| format!("Could not copy path to clipboard: {}", path))?;
-
-        debug!("Copied the path {} to clipboard", path);
-        Ok(true)
-    }
 }
 
 fn worktree_to_list_item(

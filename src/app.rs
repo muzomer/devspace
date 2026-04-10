@@ -43,6 +43,7 @@ pub struct App {
     mode: InputMode,
     confirm_action: ConfirmAction,
     pending_pr: Option<(github::PrUrl, github::PrInfo)>,
+    pub selected_path: Option<String>,
 }
 
 impl App {
@@ -66,6 +67,7 @@ impl App {
             mode: InputMode::Normal,
             confirm_action: ConfirmAction::DeleteWorktree,
             pending_pr: None,
+            selected_path: None,
         }
     }
 
@@ -211,7 +213,13 @@ impl App {
                 };
                 EventState::Consumed
             }
-            _ => self.worktrees_component.handle_action(action),
+            _ => {
+                let result = self.worktrees_component.handle_action(action);
+                if result == EventState::Exit {
+                    self.selected_path = self.worktrees_component.selected_worktree_path();
+                }
+                result
+            }
         }
     }
 
