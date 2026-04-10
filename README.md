@@ -11,7 +11,7 @@
   <a href="#roadmap">Roadmap</a><br>
 </p>
 
-![Create New Git Worktrees](demos/create_new_worktrees.gif)
+![Features demo](demos/features.gif)
 
 # Features
 
