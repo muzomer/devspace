@@ -37,6 +37,9 @@ fn resolve_normal(key: KeyEvent) -> Option<Action> {
         }
         (KeyCode::Char('n'), KeyModifiers::NONE) => Some(Action::OpenRepositories),
         (KeyCode::Char('p'), KeyModifiers::NONE) => Some(Action::OpenPrWorktree),
+        (KeyCode::Char('P'), KeyModifiers::NONE) | (KeyCode::Char('P'), KeyModifiers::SHIFT) => {
+            Some(Action::OpenPrWorktreeAutoClone)
+        }
         (KeyCode::Esc, KeyModifiers::NONE) => Some(Action::ClosePopup),
         (KeyCode::Char('/'), KeyModifiers::NONE) | (KeyCode::Char('i'), KeyModifiers::NONE) => {
             Some(Action::EnterInsertMode)

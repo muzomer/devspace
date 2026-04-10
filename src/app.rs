@@ -166,6 +166,13 @@ impl App {
                 self.mode = InputMode::Insert;
                 EventState::Consumed
             }
+            Action::OpenPrWorktreeAutoClone => {
+                self.pr_worktree_component.reset();
+                self.pr_worktree_component.auto_clone = true;
+                self.focus = Focus::PrWorktree;
+                self.mode = InputMode::Insert;
+                EventState::Consumed
+            }
             Action::Delete | Action::ForceDelete => {
                 match self.worktrees_component.delete_selected_worktree() {
                     Ok(()) => self.worktrees_component.last_error = None,
@@ -344,6 +351,7 @@ impl App {
 
     fn handle_pr_url_submission(&mut self) -> EventState {
         let url = self.pr_worktree_component.current_url().to_string();
+        let auto_clone = self.pr_worktree_component.auto_clone;
 
         let pr_url = match github::parse_pr_url(&url) {
             Ok(p) => p,
@@ -366,22 +374,29 @@ impl App {
             .select_repository_by_name(&pr_url.repo)
         {
             self.pending_pr = Some((pr_url.clone(), pr_info));
+            self.pr_worktree_component.reset();
+            if auto_clone {
+                return self.clone_and_open_pr(true);
+            }
             self.confirm_component = ConfirmComponent::new(
                 "Clone Repository".to_string(),
                 format!("Repository '{}' not found. Clone from GitHub?", pr_url.repo),
                 format!("git@github.com:{}/{}.git", pr_url.owner, pr_url.repo),
             );
             self.confirm_action = ConfirmAction::CloneRepo;
-            self.pr_worktree_component.reset();
             self.focus = Focus::Confirm;
             self.mode = InputMode::Normal;
             return EventState::Consumed;
         }
 
-        self.open_worktree_for_pr(pr_info)
+        self.open_worktree_for_pr(pr_info, auto_clone)
     }
 
     fn handle_clone_confirmed(&mut self) -> EventState {
+        self.clone_and_open_pr(false)
+    }
+
+    fn clone_and_open_pr(&mut self, auto: bool) -> EventState {
         let (pr_url, pr_info) = match self.pending_pr.take() {
             Some(p) => p,
             None => {
@@ -412,13 +427,12 @@ impl App {
             }
         }
 
-        self.open_worktree_for_pr(pr_info)
+        self.open_worktree_for_pr(pr_info, auto)
     }
 
-    fn open_worktree_for_pr(&mut self, pr_info: github::PrInfo) -> EventState {
+    fn open_worktree_for_pr(&mut self, pr_info: github::PrInfo, auto: bool) -> EventState {
         let branch = pr_info.branch_name.clone();
 
-        // Worktree already exists — select it and close popup
         if self.worktrees_component.select_worktree_by_branch(&branch) {
             self.pr_worktree_component.reset();
             self.focus = Focus::Worktrees;
@@ -430,26 +444,49 @@ impl App {
             return EventState::Consumed;
         }
 
-        // No worktree yet — open CreateWorktree with branch pre-filled
-        let warning = if pr_info.is_merged {
-            Some("Warning: PR is merged, branch may be deleted on remote".to_string())
-        } else {
-            None
-        };
+        self.pr_worktree_component.reset();
 
-        let (repo_name, base_branch_hint) =
-            if let Some(r) = self.repositories_component.selected_repository() {
-                (r.name(), Some(r.resolve_base_branch(&branch)))
+        if auto {
+            if let Some(repo) = self.repositories_component.selected_repository() {
+                match repo.create_new_worktree(&branch, &self.args.worktrees_dir) {
+                    Ok(worktree) => {
+                        self.worktrees_component.last_error = if pr_info.is_merged {
+                            Some(
+                                "Warning: PR is merged, branch may be deleted on remote"
+                                    .to_string(),
+                            )
+                        } else {
+                            None
+                        };
+                        self.worktrees_component.add(worktree);
+                    }
+                    Err(e) => {
+                        self.worktrees_component.last_error = Some(format!("{:#}", e));
+                    }
+                }
+            }
+            self.focus = Focus::Worktrees;
+            self.mode = InputMode::Normal;
+        } else {
+            let warning = if pr_info.is_merged {
+                Some("Warning: PR is merged, branch may be deleted on remote".to_string())
             } else {
-                (String::new(), None)
+                None
             };
 
-        self.create_worktree = CreateWorktreeComponent::new_with_branch(repo_name, branch, warning);
-        self.create_worktree.base_branch_hint = base_branch_hint;
+            let (repo_name, base_branch_hint) =
+                if let Some(r) = self.repositories_component.selected_repository() {
+                    (r.name(), Some(r.resolve_base_branch(&branch)))
+                } else {
+                    (String::new(), None)
+                };
 
-        self.pr_worktree_component.reset();
-        self.focus = Focus::CreateWorktree;
-        self.mode = InputMode::Insert;
+            self.create_worktree =
+                CreateWorktreeComponent::new_with_branch(repo_name, branch, warning);
+            self.create_worktree.base_branch_hint = base_branch_hint;
+            self.focus = Focus::CreateWorktree;
+            self.mode = InputMode::Insert;
+        }
         EventState::Consumed
     }
 
@@ -465,6 +502,7 @@ impl App {
                 HelpEntry::Binding("Tab", "Toggle filter / list"),
                 HelpEntry::Binding("n", "New worktree (pick repo)"),
                 HelpEntry::Binding("p", "New worktree from PR URL"),
+                HelpEntry::Binding("P", "New worktree from PR URL (auto-clone)"),
                 HelpEntry::Binding("d", "Delete with confirmation"),
                 HelpEntry::Binding("D", "Force delete"),
                 HelpEntry::Binding("Enter", "Copy path to clipboard & exit"),

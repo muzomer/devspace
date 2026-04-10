@@ -37,6 +37,7 @@ pub enum Action {
     ForceDelete,
     OpenRepositories,
     OpenPrWorktree,
+    OpenPrWorktreeAutoClone,
     ClosePopup,
     EnterInsertMode,
     ExitInsertMode,

@@ -12,6 +12,7 @@ pub struct PrWorktreeComponent {
     character_index: usize,
     pub input: String,
     pub error: Option<String>,
+    pub auto_clone: bool,
 }
 
 impl PrWorktreeComponent {
@@ -20,6 +21,7 @@ impl PrWorktreeComponent {
             character_index: 0,
             input: String::new(),
             error: None,
+            auto_clone: false,
         }
     }
 
@@ -35,6 +37,7 @@ impl PrWorktreeComponent {
         self.input.clear();
         self.character_index = 0;
         self.error = None;
+        self.auto_clone = false;
     }
 
     pub fn draw(&mut self, frame: &mut Frame, area: Rect) {
