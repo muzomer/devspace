@@ -11,7 +11,6 @@ keywords = ["git", "worktree", "workspace"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-arboard = { version = "3.4.1", features = ["wayland-data-control"] }
 clap = { version = "4.5.29", features = ["derive", "env"] }
 color-eyre = "0.6.3"
 crossterm = "0.28.1"
@@ -24,6 +23,8 @@ ratatui = "0.29.0"
 rayon = "1.10.0"
 tracing = "0.1.41"
 tracing-error = "0.2.1"
+serde_json = "1"
+ureq = { version = "3", features = ["json"] }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 
 [dev-dependencies]

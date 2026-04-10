@@ -8,7 +8,11 @@ use crate::git::Repository;
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
     style::{Style, Stylize},
-    widgets::{Block, BorderType, Clear, List, ListDirection, ListItem, ListState, StatefulWidget},
+    text::Line,
+    widgets::{
+        Block, BorderType, Clear, List, ListDirection, ListItem, ListState, Scrollbar,
+        ScrollbarOrientation, ScrollbarState, StatefulWidget,
+    },
     Frame,
 };
 
@@ -47,17 +51,30 @@ impl RepositoriesComponent {
             filter_area,
             matches!(mode, InputMode::Insert) && matches!(self.focus, Focus::Filter),
         );
+        let mut block = Block::bordered()
+            .border_type(BorderType::Rounded)
+            .border_style(super::BORDER_STYLE)
+            .title_alignment(Alignment::Center);
+        if matches!(mode, InputMode::Normal) {
+            block = block.title_bottom(Line::from(" ? help ").dark_gray().right_aligned());
+        }
+        let inner_area = block.inner(repos_list_area);
+
         let list = List::new(self.filtered_items())
-            .block(
-                Block::bordered()
-                    .border_type(BorderType::Rounded)
-                    .border_style(super::BORDER_STYLE)
-                    .title_alignment(Alignment::Center),
-            )
+            .block(block)
             .style(Style::new().white())
             .highlight_style(SELECTED_STYLE)
             .direction(ListDirection::TopToBottom);
         StatefulWidget::render(list, repos_list_area, f.buffer_mut(), &mut self.state);
+
+        let total = self.filtered_items().len();
+        let mut scroll_state = ScrollbarState::new(total).position(self.state.offset());
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(None)
+            .end_symbol(None)
+            .thumb_style(Style::new().dark_gray())
+            .track_style(Style::new().dark_gray());
+        f.render_stateful_widget(scrollbar, inner_area, &mut scroll_state);
     }
 
     pub fn handle_action(&mut self, action: Action) -> EventState {
@@ -109,6 +126,24 @@ impl RepositoriesComponent {
 
     pub fn is_filter_focused(&self) -> bool {
         matches!(self.focus, Focus::Filter)
+    }
+
+    /// Clears any active filter, finds the repository by name, and selects it.
+    /// Returns `true` if found, `false` otherwise.
+    pub fn select_repository_by_name(&mut self, name: &str) -> bool {
+        self.filter.clear();
+        let index = self.filtered_items().iter().position(|r| r.name() == name);
+        if let Some(idx) = index {
+            self.selected_index = Some(idx);
+            self.state.select(Some(idx));
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn add_repository(&mut self, repo: Repository) {
+        self.repositories.push(repo);
     }
 
     pub fn selected_repository(&mut self) -> Option<&Repository> {

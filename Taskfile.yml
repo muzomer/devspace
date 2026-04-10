@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 tasks:
   build-demo-image:
@@ -12,24 +12,24 @@ tasks:
       - docker run -v .:/devspace --entrypoint bash -it devspace-demo:latest
 
   generate-gif:
-      desc: "Run vhs on tape file to generate gif. Pass the path for the .tape file"
-      cmds:
-        - docker run -v .:/devspace -w /devspace/demos/ -it devspace-demo:latest {{.CLI_ARGS}}
+    desc: "Run vhs on tape file to generate gif. Pass the path for the .tape file"
+    cmds:
+      - docker run -v .:/devspace -w /devspace/demos/ -it devspace-demo:latest {{.CLI_ARGS}}
 
   setup-demo-env:
     desc: "Setup the demo directories"
     cmd: |-
-      pushd /var/tmp/demo
-      rm -rvf *
+      test -d demos/repos-dir || mkdir demos/repos-dir
+      pushd demos/repos-dir
+      rm -rf *
 
-      for demo_repo in backend-repo frontend-repo infra-repo
+      for demo_repo in first-repo second-repo
       do
-        git init repositories_dir/$demo_repo --initial-branch main
-        pushd repositories_dir/$demo_repo
-        git commit --allow-empty -m 'initial commit'
-        popd
+        git clone git@github.com:muzomer/${demo_repo}.git
       done
-      mkdir worktrees_dir
+      popd
+      test -d demos/worktrees-dir && rm -rf demos/worktrees-dir
+      mkdir demos/worktrees-dir
 
   run-demo:
     desc: "Command to execute demo from the demos directory"

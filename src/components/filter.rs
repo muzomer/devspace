@@ -37,6 +37,11 @@ impl FilterComponent {
         f.render_widget(input, rect);
     }
 
+    pub fn clear(&mut self) {
+        self.value.clear();
+        self.character_index = 0;
+    }
+
     pub fn enter_char(&mut self, new_char: char) {
         let index = self.byte_index();
         self.value.insert(index, new_char);

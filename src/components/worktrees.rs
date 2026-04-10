@@ -1,7 +1,5 @@
-use crate::git;
-use arboard::Clipboard;
+use crate::git::{self, RemoteStatus};
 use color_eyre::eyre;
-use color_eyre::eyre::WrapErr;
 use nucleo_matcher::{
     pattern::{CaseMatching, Normalization, Pattern},
     Config, Matcher, Utf32Str,
@@ -16,7 +14,6 @@ use ratatui::{
     },
     Frame,
 };
-use tracing::debug;
 
 use super::{filter::FilterComponent, Action, EventState};
 use super::{
@@ -52,19 +49,21 @@ impl WorktreesComponent {
     pub fn draw(&mut self, f: &mut Frame, rect: Rect, mode: InputMode, is_active: bool) {
         let worktrees_dir = self.worktrees_dir.clone();
 
-        // Collect (has_remote, path) as owned data so the mutable borrow from
+        // Collect (remote_status, is_dirty, path) as owned data so the mutable borrow from
         // filtered_items() fully ends before we access other fields of self.
-        let display_data: Vec<(bool, String)> = {
+        let display_data: Vec<(RemoteStatus, bool, String)> = {
             let filtered = self.filtered_items();
             filtered
                 .iter()
-                .map(|wt| (wt.has_remote_branch, wt.path().to_string()))
+                .map(|wt| (wt.remote_status, wt.is_dirty, wt.path().to_string()))
                 .collect()
         };
         let total = display_data.len();
         let items: Vec<ListItem<'static>> = display_data
             .iter()
-            .map(|(has_remote, path)| worktree_to_list_item(*has_remote, path, &worktrees_dir))
+            .map(|(remote_status, is_dirty, path)| {
+                worktree_to_list_item(*remote_status, *is_dirty, path, &worktrees_dir)
+            })
             .collect();
 
         let current = self.selected_index.map(|i| i + 1).unwrap_or(0);
@@ -107,7 +106,9 @@ impl WorktreesComponent {
         StatefulWidget::render(list, list_area, f.buffer_mut(), &mut self.state);
 
         let mut scroll_state = ScrollbarState::new(total).position(self.state.offset());
-        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight);
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(None)
+            .end_symbol(None);
         f.render_stateful_widget(scrollbar, list_area, &mut scroll_state);
     }
 
@@ -129,18 +130,13 @@ impl WorktreesComponent {
                 self.select(ItemOrder::Last);
                 EventState::Consumed
             }
-            Action::Select => match self.copy_path_of_selected_worktree() {
-                Ok(true) => {
-                    debug!("copied path of selected worktree");
-                    self.last_error = None;
+            Action::Select => {
+                if self.selected_worktree_path().is_some() {
                     EventState::Exit
-                }
-                Ok(false) => EventState::Consumed,
-                Err(e) => {
-                    self.last_error = Some(format!("{:#}", e));
+                } else {
                     EventState::Consumed
                 }
-            },
+            }
             Action::InsertChar(c) => {
                 self.filter.enter_char(c);
                 EventState::Consumed
@@ -170,6 +166,27 @@ impl WorktreesComponent {
 
     pub fn is_filter_focused(&self) -> bool {
         matches!(self.focus, Focus::Filter)
+    }
+
+    /// Clears any active filter, finds the worktree matching the given branch name,
+    /// and selects it. Returns `true` if found, `false` otherwise.
+    pub fn select_worktree_by_branch(&mut self, branch: &str) -> bool {
+        let exists = self.worktrees.iter().any(|wt| wt.name() == branch);
+        if !exists {
+            return false;
+        }
+        self.filter.clear();
+        let index = self
+            .filtered_items()
+            .iter()
+            .position(|wt| wt.name() == branch);
+        if let Some(idx) = index {
+            self.selected_index = Some(idx);
+            self.state.select(Some(idx));
+            true
+        } else {
+            false
+        }
     }
 
     pub fn add(&mut self, new_worktree: git::Worktree) {
@@ -203,37 +220,25 @@ impl WorktreesComponent {
         })
     }
 
-    fn copy_path_of_selected_worktree(&mut self) -> eyre::Result<bool> {
-        let path = match self.selected_worktree_path() {
-            Some(path) => path,
-            None => {
-                debug!("No worktree was selected. Nothing to copy to clipboard");
-                return Ok(false);
-            }
-        };
-
-        let mut clipboard = Clipboard::new().wrap_err("Could not access the clipboard")?;
-
-        clipboard
-            .set()
-            .text(&path)
-            .wrap_err_with(|| format!("Could not copy path to clipboard: {}", path))?;
-
-        debug!("Copied the path {} to clipboard", path);
-        Ok(true)
-    }
 }
 
-fn worktree_to_list_item(has_remote: bool, path: &str, worktrees_dir: &str) -> ListItem<'static> {
-    let (remote_indicator, indicator_color) = if has_remote {
-        ("✓", Color::Green)
-    } else {
-        ("✗", Color::Red)
+fn worktree_to_list_item(
+    remote_status: RemoteStatus,
+    is_dirty: bool,
+    path: &str,
+    worktrees_dir: &str,
+) -> ListItem<'static> {
+    let (remote_indicator, indicator_color) = match remote_status {
+        RemoteStatus::Exists => ("✔", Color::Green),
+        RemoteStatus::Gone => ("✘", Color::Red),
+        RemoteStatus::NeverPushed => ("⬆", Color::Yellow),
     };
 
     let indicator_span = Span::styled(
         format!("{} ", remote_indicator),
-        Style::default().fg(indicator_color),
+        Style::default()
+            .fg(indicator_color)
+            .add_modifier(Modifier::BOLD),
     );
 
     let path = path.trim_end_matches('/');
@@ -253,10 +258,26 @@ fn worktree_to_list_item(has_remote: bool, path: &str, worktrees_dir: &str) -> L
                 .fg(Color::White)
                 .add_modifier(Modifier::BOLD),
         );
-        Line::from(vec![indicator_span, repo_span, sep_span, branch_span])
+        if is_dirty {
+            let dirty_span = Span::styled("*", Style::default().fg(Color::Yellow));
+            Line::from(vec![
+                indicator_span,
+                repo_span,
+                sep_span,
+                branch_span,
+                dirty_span,
+            ])
+        } else {
+            Line::from(vec![indicator_span, repo_span, sep_span, branch_span])
+        }
     } else {
         let path_span = Span::from(relative.to_string());
-        Line::from(vec![indicator_span, path_span])
+        if is_dirty {
+            let dirty_span = Span::styled("*", Style::default().fg(Color::Yellow));
+            Line::from(vec![indicator_span, path_span, dirty_span])
+        } else {
+            Line::from(vec![indicator_span, path_span])
+        }
     };
 
     ListItem::new(line)
