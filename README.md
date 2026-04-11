@@ -29,14 +29,15 @@ It simplifies working in multiple git repositories, and multiple PRs in each rep
 
 The idea is to simplify context switching between open PRs by having all the git worktrees visible and manageable in single place.
 
-`devspace` assumes repositories are stored under a single directory (`DEVSPACE_REPOS_DIR`), and there is a separate directory (`DEVSPACE_WORKTREES_DIR`) for storing the worktrees.
+`devspace` scans one or more repositories directories (`DEVSPACE_REPOS_DIR`) for git repos, and stores worktrees under a separate directory (`DEVSPACE_WORKTREES_DIR`).
 
 ```
 .
-├── repositories_dir
+├── work_repos_dir
 │   ├── backend-repo
-│   ├── frontend-repo
-│   └── infra-repo
+│   └── frontend-repo
+├── personal_repos_dir
+│   └── side-project
 └── worktrees_dir
 ```
 
@@ -66,7 +67,7 @@ Typicall, the binary will be installed in `$HOME/.cargo/bin/devspace`.
 # Usage
 
 Run `cd $(devspace)` in `bash`/`zsh` or `cd (devspace)` in `fish` shell from any directory with the below CLI options, or define the environment variables and run it without any CLI option:
-- `--repos-dir`: the directory where the repositories are stored (or set `DEVSPACE_REPOS_DIR` env variable)
+- `--repos-dir`: one or more directories where repositories are stored, colon-separated (or set `DEVSPACE_REPOS_DIR` env variable, e.g. `/path/a:/path/b`). Can be repeated: `--repos-dir /a --repos-dir /b`
 - `--worktrees-dir`: the directory where the worktrees will be stored (or set `DEVSPACE_WORKTREES_DIR` env variable).
 
 ## Keybindings
