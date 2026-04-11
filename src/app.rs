@@ -49,7 +49,11 @@ pub struct App {
 impl App {
     pub fn new() -> App {
         let args = cli::Args::new();
-        let repositories = git::list_repositories(&args.repos_dir, args.run_fetch);
+        let repositories: Vec<_> = args
+            .repos_dirs
+            .iter()
+            .flat_map(|dir| git::list_repositories(dir, args.run_fetch))
+            .collect();
         let worktrees = git::worktrees_of_repositories(&repositories);
 
         let repositories_component = RepositoriesComponent::new(repositories);
@@ -413,14 +417,15 @@ impl App {
             }
         };
 
-        if let Err(e) = github::clone_repository(&pr_url.owner, &pr_url.repo, &self.args.repos_dir)
+        if let Err(e) =
+            github::clone_repository(&pr_url.owner, &pr_url.repo, &self.args.repos_dirs[0])
         {
             self.worktrees_component.last_error = Some(format!("{:#}", e));
             self.focus = Focus::Worktrees;
             return EventState::Consumed;
         }
 
-        let repo_path = format!("{}/{}", self.args.repos_dir, pr_url.repo);
+        let repo_path = format!("{}/{}", self.args.repos_dirs[0], pr_url.repo);
         match git::Repository::from_path(&repo_path, false) {
             Ok(repo) => {
                 self.repositories_component.add_repository(repo);

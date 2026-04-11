@@ -12,14 +12,16 @@ pub struct Args {
     )]
     // TODO: list worktrees from the repositories directly instead of getting the worktrees_dir from user
     pub worktrees_dir: String,
-    /// Directory of the git respositories
+    /// Directory of the git repositories (colon-separated for multiple)
     #[arg(
         short = 'r',
         long = "repos-dir",
         value_name = "DIR",
-        env = "DEVSPACE_REPOS_DIR"
+        env = "DEVSPACE_REPOS_DIR",
+        num_args = 1..,
+        value_delimiter = ':'
     )]
-    pub repos_dir: String,
+    pub repos_dirs: Vec<String>,
 
     /// Whether to run git fetch for each repo. Default: false
     #[arg(
@@ -34,14 +36,19 @@ pub struct Args {
 impl Args {
     pub fn new() -> Self {
         let mut args = Self::parse();
-        args.repos_dir = std::fs::canonicalize(
-            expand_tilde::expand_tilde(&args.repos_dir)
-                .expect("Could not expand the ~ in the repos_dir"),
-        )
-        .expect("Could not resolve repos_dir to an absolute path")
-        .to_str()
-        .expect("Could not convert the expanded repos_dir to a string")
-        .to_string();
+        args.repos_dirs = args
+            .repos_dirs
+            .iter()
+            .map(|dir| {
+                std::fs::canonicalize(
+                    expand_tilde::expand_tilde(dir).expect("Could not expand the ~ in a repos_dir"),
+                )
+                .expect("Could not resolve repos_dir to an absolute path")
+                .to_str()
+                .expect("Could not convert the expanded repos_dir to a string")
+                .to_string()
+            })
+            .collect();
         args.worktrees_dir = std::fs::canonicalize(
             expand_tilde::expand_tilde(&args.worktrees_dir)
                 .expect("Could not expand the ~ in the worktrees_dir"),

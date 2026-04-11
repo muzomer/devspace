@@ -219,7 +219,6 @@ impl WorktreesComponent {
                 .map(|wt| wt.path().to_string())
         })
     }
-
 }
 
 fn worktree_to_list_item(
