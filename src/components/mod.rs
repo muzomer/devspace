@@ -18,16 +18,16 @@ use ratatui::style::{
 pub use repositories::RepositoriesComponent;
 pub use worktrees::WorktreesComponent;
 
-/// Highlight for the currently selected list item.
-const SELECTED_STYLE: Style = Style::new().bg(BLUE.c800).add_modifier(Modifier::BOLD);
-/// Cyan border matching lazygit's panel border style.
-const BORDER_STYLE: Style = Style::new().fg(CYAN.c600);
-/// Same cyan border for popup / dialog windows; elevation via POPUP_BG_STYLE.
-const POPUP_BORDER_STYLE: Style = Style::new().fg(CYAN.c600);
+/// Selected item: vivid blue matching lazygit's selectedLineBgColor.
+const SELECTED_STYLE: Style = Style::new().bg(BLUE.c700).add_modifier(Modifier::BOLD);
+/// Vivid cyan borders matching lazygit's activeBorderColor (#22d3ee).
+const BORDER_STYLE: Style = Style::new().fg(CYAN.c400);
+/// Same vivid cyan border for popups; elevation conveyed via POPUP_BG_STYLE.
+const POPUP_BORDER_STYLE: Style = Style::new().fg(CYAN.c400);
 /// Slightly lighter dark background that lifts popup / dialog windows above the main panel.
 const POPUP_BG_STYLE: Style = Style::new().bg(SLATE.c800);
-/// Brighter cyan border for an active / focused text input.
-const ACTIVE_BORDER_STYLE: Style = Style::new().fg(CYAN.c400);
+/// Bright cyan + bold for active input — matches lazygit's [cyan, bold] active border.
+const ACTIVE_BORDER_STYLE: Style = Style::new().fg(CYAN.c300).add_modifier(Modifier::BOLD);
 
 #[derive(PartialEq, Debug)]
 pub enum EventState {
