@@ -56,7 +56,6 @@ impl HelpComponent {
         let block = Block::bordered()
             .border_type(BorderType::Rounded)
             .border_style(super::POPUP_BORDER_STYLE)
-            .style(super::POPUP_BG_STYLE)
             .title(Line::from(" Help ").style(Style::new().fg(GREEN.c300).bold()))
             .title_alignment(Alignment::Center);
         f.render_widget(block, area);

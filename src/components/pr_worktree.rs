@@ -49,7 +49,6 @@ impl PrWorktreeComponent {
         let outer_block = Block::bordered()
             .border_type(BorderType::Rounded)
             .border_style(super::POPUP_BORDER_STYLE)
-            .style(super::POPUP_BG_STYLE)
             .title(Line::from(" Worktree from PR ").style(Style::new().fg(GREEN.c300).bold()))
             .title_bottom(keybinding_hint());
 

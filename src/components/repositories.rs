@@ -67,7 +67,6 @@ impl RepositoriesComponent {
         let mut block = Block::bordered()
             .border_type(BorderType::Rounded)
             .border_style(super::POPUP_BORDER_STYLE)
-            .style(super::POPUP_BG_STYLE)
             .title(title);
         if matches!(mode, InputMode::Normal) {
             block = block.title_bottom(repos_keybinding_hint());

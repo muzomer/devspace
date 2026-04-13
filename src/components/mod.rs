@@ -20,13 +20,11 @@ pub use worktrees::WorktreesComponent;
 
 /// Selected item: blue bg matching lazygit's selectedLineBgColor.
 const SELECTED_STYLE: Style = Style::new().bg(BLUE.c800).add_modifier(Modifier::BOLD);
-/// Muted border for inactive/main panel — lazygit's inactiveBorderColor is terminal default.
+/// Muted border for the main panel — lazygit inactiveBorderColor is terminal default.
 const BORDER_STYLE: Style = Style::new().fg(SLATE.c500);
-/// Green border for popups (active elements) — lazygit's activeBorderColor is [green, bold].
+/// Green bold border for popups — lazygit activeBorderColor is [green, bold].
 const POPUP_BORDER_STYLE: Style = Style::new().fg(GREEN.c400).add_modifier(Modifier::BOLD);
-/// Slightly lighter dark background that lifts popup / dialog windows above the main panel.
-const POPUP_BG_STYLE: Style = Style::new().bg(SLATE.c800);
-/// Green bold border for active/focused text input — matches lazygit's [green, bold].
+/// Green bold border for active text inputs — same as popup active border.
 const ACTIVE_BORDER_STYLE: Style = Style::new().fg(GREEN.c400).add_modifier(Modifier::BOLD);
 
 #[derive(PartialEq, Debug)]
