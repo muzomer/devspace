@@ -6,7 +6,10 @@ use nucleo_matcher::{
 };
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::{Color, Modifier, Style, Stylize},
+    style::{
+        palette::tailwind::{AMBER, GREEN, RED, SKY, SLATE},
+        Color, Modifier, Style, Stylize,
+    },
     text::{Line, Span},
     widgets::{
         Block, List, ListItem, ListState, Scrollbar, ScrollbarOrientation, ScrollbarState,
@@ -69,8 +72,8 @@ impl WorktreesComponent {
         let current = self.selected_index.map(|i| i + 1).unwrap_or(0);
 
         let mode_indicator = match mode {
-            InputMode::Normal => Line::from(" NORMAL ").cyan().bold(),
-            InputMode::Insert => Line::from(" INSERT ").yellow().bold(),
+            InputMode::Normal => Line::from(" NORMAL ").style(Style::new().fg(SKY.c300).bold()),
+            InputMode::Insert => Line::from(" INSERT ").style(Style::new().fg(AMBER.c300).bold()),
         };
 
         let bottom_left = match &self.last_error {
@@ -78,10 +81,19 @@ impl WorktreesComponent {
             None => mode_indicator,
         };
 
+        let title = Line::from(vec![
+            Span::raw(" "),
+            Span::styled("Worktrees", Style::new().fg(SKY.c300).bold()),
+            Span::styled(
+                format!(" ({}/{}) ", current, total),
+                Style::new().fg(SLATE.c400),
+            ),
+        ]);
+
         let mut block = Block::bordered()
             .border_type(ratatui::widgets::BorderType::Rounded)
             .border_style(super::BORDER_STYLE)
-            .title(format!(" Worktrees ({}/{}) ", current, total))
+            .title(title)
             .title_bottom(bottom_left);
 
         if matches!(mode, InputMode::Normal) {
@@ -228,9 +240,9 @@ fn worktree_to_list_item(
     worktrees_dir: &str,
 ) -> ListItem<'static> {
     let (remote_indicator, indicator_color) = match remote_status {
-        RemoteStatus::Exists => ("✔", Color::Green),
-        RemoteStatus::Gone => ("✘", Color::Red),
-        RemoteStatus::NeverPushed => ("⬆", Color::Yellow),
+        RemoteStatus::Exists => ("✔", GREEN.c400),
+        RemoteStatus::Gone => ("✘", RED.c400),
+        RemoteStatus::NeverPushed => ("⬆", AMBER.c400),
     };
 
     let indicator_span = Span::styled(
@@ -249,8 +261,8 @@ fn worktree_to_list_item(
     let line = if let Some(sep) = relative.find('/') {
         let repo = &relative[..sep];
         let branch = relative[sep + 1..].trim_end_matches('/');
-        let repo_span = Span::styled(repo.to_string(), Style::default().fg(Color::DarkGray));
-        let sep_span = Span::styled(" / ", Style::default().fg(Color::DarkGray));
+        let repo_span = Span::styled(repo.to_string(), Style::default().fg(SLATE.c400));
+        let sep_span = Span::styled(" / ", Style::default().fg(SLATE.c600));
         let branch_span = Span::styled(
             branch.to_string(),
             Style::default()
@@ -258,7 +270,7 @@ fn worktree_to_list_item(
                 .add_modifier(Modifier::BOLD),
         );
         if is_dirty {
-            let dirty_span = Span::styled("*", Style::default().fg(Color::Yellow));
+            let dirty_span = Span::styled(" *", Style::default().fg(AMBER.c400));
             Line::from(vec![
                 indicator_span,
                 repo_span,
@@ -272,7 +284,7 @@ fn worktree_to_list_item(
     } else {
         let path_span = Span::from(relative.to_string());
         if is_dirty {
-            let dirty_span = Span::styled("*", Style::default().fg(Color::Yellow));
+            let dirty_span = Span::styled(" *", Style::default().fg(AMBER.c400));
             Line::from(vec![indicator_span, path_span, dirty_span])
         } else {
             Line::from(vec![indicator_span, path_span])

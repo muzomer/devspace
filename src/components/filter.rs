@@ -1,6 +1,6 @@
 use ratatui::{
     layout::Rect,
-    style::{Color, Style, Stylize},
+    style::{palette::tailwind::SLATE, Style, Stylize},
     text::Line,
     widgets::{Block, BorderType, Paragraph},
     Frame,
@@ -23,7 +23,7 @@ impl FilterComponent {
 
     pub fn draw(&mut self, f: &mut Frame, rect: Rect, is_active: bool) {
         let border_style = if is_active {
-            Style::new().fg(Color::Cyan)
+            super::ACTIVE_BORDER_STYLE
         } else {
             super::BORDER_STYLE
         };
@@ -31,7 +31,7 @@ impl FilterComponent {
             Block::bordered()
                 .border_type(BorderType::Rounded)
                 .border_style(border_style)
-                .title(Line::from(self.title.as_str()).style(Style::new().fg(Color::Gray)))
+                .title(Line::from(self.title.as_str()).style(Style::new().fg(SLATE.c400)))
                 .style(Style::new().white()),
         );
         f.render_widget(input, rect);

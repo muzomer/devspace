@@ -1,6 +1,9 @@
 use ratatui::{
     layout::{Alignment, Margin, Rect},
-    style::{Style, Stylize},
+    style::{
+        palette::tailwind::{AMBER, SKY, VIOLET},
+        Style, Stylize,
+    },
     text::{Line, Span},
     widgets::{Block, BorderType, Clear, Paragraph},
     Frame,
@@ -52,9 +55,8 @@ impl HelpComponent {
 
         let block = Block::bordered()
             .border_type(BorderType::Rounded)
-            .border_style(super::BORDER_STYLE)
-            .title(" Help ")
-            .bold()
+            .border_style(super::POPUP_BORDER_STYLE)
+            .title(Line::from(" Help ").style(Style::new().fg(VIOLET.c200).bold()))
             .title_alignment(Alignment::Center);
         f.render_widget(block, area);
 
@@ -67,13 +69,13 @@ impl HelpComponent {
             .iter()
             .flat_map(|e| match e {
                 HelpEntry::Binding(key, desc) => vec![Line::from(vec![
-                    Span::styled(format!("{:<12}", key), Style::new().yellow().bold()),
+                    Span::styled(format!("{:<12}", key), Style::new().fg(AMBER.c300).bold()),
                     Span::raw(*desc),
                 ])],
                 HelpEntry::Section(title) => vec![
                     Line::from(Span::styled(
                         *title,
-                        Style::new().white().bold().underlined(),
+                        Style::new().fg(SKY.c300).bold().underlined(),
                     )),
                     Line::raw(""),
                 ],

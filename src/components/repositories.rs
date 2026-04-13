@@ -53,7 +53,7 @@ impl RepositoriesComponent {
         );
         let mut block = Block::bordered()
             .border_type(BorderType::Rounded)
-            .border_style(super::BORDER_STYLE)
+            .border_style(super::POPUP_BORDER_STYLE)
             .title_alignment(Alignment::Center);
         if matches!(mode, InputMode::Normal) {
             block = block.title_bottom(Line::from(" ? help ").dark_gray().right_aligned());

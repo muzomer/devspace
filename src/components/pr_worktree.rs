@@ -1,6 +1,9 @@
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::{Color, Style, Stylize},
+    style::{
+        palette::tailwind::{SLATE, VIOLET},
+        Color, Style, Stylize,
+    },
     text::{Line, Span},
     widgets::{Block, BorderType, Clear, Padding, Paragraph, Widget},
     Frame,
@@ -45,8 +48,8 @@ impl PrWorktreeComponent {
 
         let outer_block = Block::bordered()
             .border_type(BorderType::Rounded)
-            .border_style(super::BORDER_STYLE)
-            .title(Line::from(" New Worktree from PR ").style(Style::new().fg(Color::Gray)))
+            .border_style(super::POPUP_BORDER_STYLE)
+            .title(Line::from(" New Worktree from PR ").style(Style::new().fg(VIOLET.c300).bold()))
             .title_bottom(keybinding_hint());
 
         let inner_area = outer_block.inner(area);
@@ -61,13 +64,15 @@ impl PrWorktreeComponent {
         .horizontal_margin(4)
         .areas(inner_area);
 
-        Paragraph::new("GitHub PR URL:").render(label_area, frame.buffer_mut());
+        Paragraph::new("GitHub PR URL:")
+            .style(Style::new().fg(SLATE.c300))
+            .render(label_area, frame.buffer_mut());
 
         Paragraph::new(self.input.as_str())
             .block(
                 Block::bordered()
                     .border_type(BorderType::Rounded)
-                    .border_style(Style::new().fg(Color::Cyan))
+                    .border_style(super::ACTIVE_BORDER_STYLE)
                     .padding(Padding::horizontal(1)),
             )
             .render(input_area, frame.buffer_mut());

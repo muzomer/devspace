@@ -1,6 +1,9 @@
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::{Color, Style, Stylize},
+    style::{
+        palette::tailwind::{SLATE, VIOLET},
+        Color, Style, Stylize,
+    },
     text::{Line, Span},
     widgets::{Block, BorderType, Clear, Paragraph, Widget},
     Frame,
@@ -28,8 +31,10 @@ impl ConfirmComponent {
 
         let outer_block = Block::bordered()
             .border_type(BorderType::Rounded)
-            .border_style(super::BORDER_STYLE)
-            .title(Line::from(format!(" {} ", self.title)).style(Style::new().fg(Color::Gray)))
+            .border_style(super::POPUP_BORDER_STYLE)
+            .title(
+                Line::from(format!(" {} ", self.title)).style(Style::new().fg(VIOLET.c300).bold()),
+            )
             .title_bottom(keybinding_hint());
 
         let inner_area = outer_block.inner(area);
@@ -44,7 +49,9 @@ impl ConfirmComponent {
         .horizontal_margin(4)
         .areas(inner_area);
 
-        Paragraph::new(self.label.as_str()).render(label_area, frame.buffer_mut());
+        Paragraph::new(self.label.as_str())
+            .style(Style::new().fg(SLATE.c300))
+            .render(label_area, frame.buffer_mut());
         Paragraph::new(self.detail.as_str())
             .style(Style::default().fg(Color::Red).bold())
             .render(detail_area, frame.buffer_mut());
