@@ -26,8 +26,6 @@ const BORDER_STYLE: Style = Style::new().fg(SLATE.c500);
 const POPUP_BORDER_STYLE: Style = Style::new().fg(GREEN.c400).add_modifier(Modifier::BOLD);
 /// Brighter green bold border for focused inputs — one step lighter than popup border.
 const ACTIVE_BORDER_STYLE: Style = Style::new().fg(GREEN.c300).add_modifier(Modifier::BOLD);
-/// Very dark green background applied to focused input areas for a subtle glow effect.
-const ACTIVE_INPUT_STYLE: Style = Style::new().bg(GREEN.c950);
 
 #[derive(PartialEq, Debug)]
 pub enum EventState {

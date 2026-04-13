@@ -73,7 +73,6 @@ impl PrWorktreeComponent {
                 Block::bordered()
                     .border_type(BorderType::Rounded)
                     .border_style(super::ACTIVE_BORDER_STYLE)
-                    .style(super::ACTIVE_INPUT_STYLE)
                     .padding(Padding::horizontal(1)),
             )
             .render(input_area, frame.buffer_mut());

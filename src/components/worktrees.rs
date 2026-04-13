@@ -136,8 +136,7 @@ impl WorktreesComponent {
                 Paragraph::new(Line::from(vec![
                     Span::styled(" / ", Style::new().fg(GREEN.c300).bold()),
                     Span::styled(self.filter.value.clone(), Style::new().white()),
-                ]))
-                .style(super::ACTIVE_INPUT_STYLE),
+                ])),
                 filter_line,
             );
             // " / " prefix is 3 chars wide
@@ -147,7 +146,7 @@ impl WorktreesComponent {
             ));
             f.render_widget(
                 Paragraph::new("─".repeat(sep_line.width as usize))
-                    .style(Style::new().fg(GREEN.c700).bg(GREEN.c950)),
+                    .style(Style::new().fg(SLATE.c700)),
                 sep_line,
             );
             list_area
