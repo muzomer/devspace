@@ -1,7 +1,7 @@
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{
-        palette::tailwind::{AMBER, RED, SLATE, VIOLET},
+        palette::tailwind::{AMBER, CYAN, RED, SLATE},
         Style, Stylize,
     },
     text::{Line, Span},
@@ -31,7 +31,7 @@ impl ConfirmComponent {
 
         let title = Line::from(vec![
             Span::styled(" ⚠ ", Style::new().fg(RED.c400).bold()),
-            Span::styled(self.title.clone(), Style::new().fg(VIOLET.c200).bold()),
+            Span::styled(self.title.clone(), Style::new().fg(CYAN.c300).bold()),
             Span::raw(" "),
         ]);
 

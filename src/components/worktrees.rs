@@ -7,7 +7,7 @@ use nucleo_matcher::{
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{
-        palette::tailwind::{AMBER, GREEN, RED, SKY, SLATE},
+        palette::tailwind::{AMBER, CYAN, GREEN, RED, SLATE},
         Color, Modifier, Style, Stylize,
     },
     text::{Line, Span},
@@ -72,7 +72,7 @@ impl WorktreesComponent {
         let current = self.selected_index.map(|i| (i + 1).min(total)).unwrap_or(0);
 
         let mode_indicator = match mode {
-            InputMode::Normal => Line::from(" NORMAL ").style(Style::new().fg(SKY.c300).bold()),
+            InputMode::Normal => Line::from(" NORMAL ").style(Style::new().fg(CYAN.c400).bold()),
             InputMode::Insert => Line::from(" INSERT ").style(Style::new().fg(AMBER.c300).bold()),
         };
         let bottom_left = match &self.last_error {
@@ -84,7 +84,7 @@ impl WorktreesComponent {
         let title = {
             let mut spans = vec![
                 Span::raw(" "),
-                Span::styled("Worktrees", Style::new().fg(SKY.c300).bold()),
+                Span::styled("Worktrees", Style::new().fg(CYAN.c400).bold()),
                 Span::styled(
                     format!(" ({}/{}) ", current, total),
                     Style::new().fg(SLATE.c400),
@@ -134,7 +134,7 @@ impl WorktreesComponent {
 
             f.render_widget(
                 Paragraph::new(Line::from(vec![
-                    Span::styled(" / ", Style::new().fg(SKY.c400).bold()),
+                    Span::styled(" / ", Style::new().fg(CYAN.c500).bold()),
                     Span::styled(self.filter.value.clone(), Style::new().white()),
                 ])),
                 filter_line,

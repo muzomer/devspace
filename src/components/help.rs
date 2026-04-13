@@ -1,7 +1,7 @@
 use ratatui::{
     layout::{Alignment, Margin, Rect},
     style::{
-        palette::tailwind::{AMBER, SKY, VIOLET},
+        palette::tailwind::{AMBER, CYAN},
         Style, Stylize,
     },
     text::{Line, Span},
@@ -57,7 +57,7 @@ impl HelpComponent {
             .border_type(BorderType::Rounded)
             .border_style(super::POPUP_BORDER_STYLE)
             .style(super::POPUP_BG_STYLE)
-            .title(Line::from(" Help ").style(Style::new().fg(VIOLET.c200).bold()))
+            .title(Line::from(" Help ").style(Style::new().fg(CYAN.c300).bold()))
             .title_alignment(Alignment::Center);
         f.render_widget(block, area);
 
@@ -76,7 +76,7 @@ impl HelpComponent {
                 HelpEntry::Section(title) => vec![
                     Line::from(Span::styled(
                         *title,
-                        Style::new().fg(SKY.c300).bold().underlined(),
+                        Style::new().fg(CYAN.c400).bold().underlined(),
                     )),
                     Line::raw(""),
                 ],

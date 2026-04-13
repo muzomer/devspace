@@ -8,7 +8,7 @@ use crate::git::Repository;
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
     style::{
-        palette::tailwind::{AMBER, SKY, SLATE, VIOLET},
+        palette::tailwind::{AMBER, CYAN, SLATE},
         Style, Stylize,
     },
     text::{Line, Span},
@@ -52,7 +52,7 @@ impl RepositoriesComponent {
         let title = {
             let mut spans = vec![
                 Span::raw(" "),
-                Span::styled("Repositories", Style::new().fg(VIOLET.c300).bold()),
+                Span::styled("Repositories", Style::new().fg(CYAN.c400).bold()),
                 Span::styled(format!(" ({}) ", total), Style::new().fg(SLATE.c400)),
             ];
             if !self.filter.value.is_empty() && matches!(mode, InputMode::Normal) {
@@ -88,7 +88,7 @@ impl RepositoriesComponent {
 
             f.render_widget(
                 Paragraph::new(Line::from(vec![
-                    Span::styled(" / ", Style::new().fg(SKY.c400).bold()),
+                    Span::styled(" / ", Style::new().fg(CYAN.c500).bold()),
                     Span::styled(self.filter.value.clone(), Style::new().white()),
                 ])),
                 filter_line,

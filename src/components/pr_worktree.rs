@@ -1,7 +1,7 @@
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{
-        palette::tailwind::{AMBER, RED, SLATE, VIOLET},
+        palette::tailwind::{AMBER, CYAN, RED, SLATE},
         Style, Stylize,
     },
     text::{Line, Span},
@@ -50,7 +50,7 @@ impl PrWorktreeComponent {
             .border_type(BorderType::Rounded)
             .border_style(super::POPUP_BORDER_STYLE)
             .style(super::POPUP_BG_STYLE)
-            .title(Line::from(" Worktree from PR ").style(Style::new().fg(VIOLET.c200).bold()))
+            .title(Line::from(" Worktree from PR ").style(Style::new().fg(CYAN.c300).bold()))
             .title_bottom(keybinding_hint());
 
         let inner_area = outer_block.inner(area);

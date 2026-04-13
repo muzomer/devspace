@@ -12,7 +12,7 @@ pub use create_worktree::CreateWorktreeComponent;
 pub use help::{HelpComponent, HelpEntry};
 pub use pr_worktree::PrWorktreeComponent;
 use ratatui::style::{
-    palette::tailwind::{BLUE, SKY, SLATE},
+    palette::tailwind::{BLUE, CYAN, SLATE},
     Modifier, Style,
 };
 pub use repositories::RepositoriesComponent;
@@ -26,8 +26,8 @@ const BORDER_STYLE: Style = Style::new().fg(SLATE.c500);
 const POPUP_BORDER_STYLE: Style = Style::new().fg(SLATE.c500);
 /// Slightly lighter dark background that lifts popup / dialog windows above the main panel.
 const POPUP_BG_STYLE: Style = Style::new().bg(SLATE.c800);
-/// Bright sky-blue border for an active / focused text input.
-const ACTIVE_BORDER_STYLE: Style = Style::new().fg(SKY.c400);
+/// Bright cyan border for an active / focused text input.
+const ACTIVE_BORDER_STYLE: Style = Style::new().fg(CYAN.c500);
 
 #[derive(PartialEq, Debug)]
 pub enum EventState {
