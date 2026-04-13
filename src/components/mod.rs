@@ -12,22 +12,22 @@ pub use create_worktree::CreateWorktreeComponent;
 pub use help::{HelpComponent, HelpEntry};
 pub use pr_worktree::PrWorktreeComponent;
 use ratatui::style::{
-    palette::tailwind::{BLUE, CYAN, SLATE},
+    palette::tailwind::{BLUE, GREEN, SLATE},
     Modifier, Style,
 };
 pub use repositories::RepositoriesComponent;
 pub use worktrees::WorktreesComponent;
 
-/// Selected item: vivid blue matching lazygit's selectedLineBgColor.
-const SELECTED_STYLE: Style = Style::new().bg(BLUE.c700).add_modifier(Modifier::BOLD);
-/// Vivid cyan borders matching lazygit's activeBorderColor (#22d3ee).
-const BORDER_STYLE: Style = Style::new().fg(CYAN.c400);
-/// Same vivid cyan border for popups; elevation conveyed via POPUP_BG_STYLE.
-const POPUP_BORDER_STYLE: Style = Style::new().fg(CYAN.c400);
+/// Selected item: blue bg matching lazygit's selectedLineBgColor.
+const SELECTED_STYLE: Style = Style::new().bg(BLUE.c800).add_modifier(Modifier::BOLD);
+/// Muted border for inactive/main panel — lazygit's inactiveBorderColor is terminal default.
+const BORDER_STYLE: Style = Style::new().fg(SLATE.c500);
+/// Green border for popups (active elements) — lazygit's activeBorderColor is [green, bold].
+const POPUP_BORDER_STYLE: Style = Style::new().fg(GREEN.c400).add_modifier(Modifier::BOLD);
 /// Slightly lighter dark background that lifts popup / dialog windows above the main panel.
 const POPUP_BG_STYLE: Style = Style::new().bg(SLATE.c800);
-/// Bright cyan + bold for active input — matches lazygit's [cyan, bold] active border.
-const ACTIVE_BORDER_STYLE: Style = Style::new().fg(CYAN.c300).add_modifier(Modifier::BOLD);
+/// Green bold border for active/focused text input — matches lazygit's [green, bold].
+const ACTIVE_BORDER_STYLE: Style = Style::new().fg(GREEN.c400).add_modifier(Modifier::BOLD);
 
 #[derive(PartialEq, Debug)]
 pub enum EventState {

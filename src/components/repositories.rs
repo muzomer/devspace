@@ -8,7 +8,7 @@ use crate::git::Repository;
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
     style::{
-        palette::tailwind::{AMBER, CYAN, SLATE},
+        palette::tailwind::{BLUE, GREEN, SLATE},
         Style, Stylize,
     },
     text::{Line, Span},
@@ -52,7 +52,7 @@ impl RepositoriesComponent {
         let title = {
             let mut spans = vec![
                 Span::raw(" "),
-                Span::styled("Repositories", Style::new().fg(CYAN.c400).bold()),
+                Span::styled("Repositories", Style::new().fg(GREEN.c400).bold()),
                 Span::styled(format!(" ({}) ", total), Style::new().fg(SLATE.c400)),
             ];
             if !self.filter.value.is_empty() && matches!(mode, InputMode::Normal) {
@@ -88,7 +88,7 @@ impl RepositoriesComponent {
 
             f.render_widget(
                 Paragraph::new(Line::from(vec![
-                    Span::styled(" / ", Style::new().fg(CYAN.c500).bold()),
+                    Span::styled(" / ", Style::new().fg(GREEN.c500).bold()),
                     Span::styled(self.filter.value.clone(), Style::new().white()),
                 ])),
                 filter_line,
@@ -212,9 +212,9 @@ impl RepositoriesComponent {
 
 fn repos_keybinding_hint() -> Line<'static> {
     Line::from(vec![
-        Span::styled("[Enter] ", Style::new().fg(AMBER.c300).bold()),
+        Span::styled("[Enter] ", Style::new().fg(BLUE.c400).bold()),
         Span::styled("select", Style::new().fg(SLATE.c500)),
-        Span::styled("  [Esc] ", Style::new().fg(AMBER.c300).bold()),
+        Span::styled("  [Esc] ", Style::new().fg(BLUE.c400).bold()),
         Span::styled("close ", Style::new().fg(SLATE.c500)),
     ])
     .right_aligned()

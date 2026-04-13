@@ -1,7 +1,7 @@
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{
-        palette::tailwind::{AMBER, CYAN, RED, SLATE},
+        palette::tailwind::{BLUE, GREEN, RED, SLATE},
         Style, Stylize,
     },
     text::{Line, Span},
@@ -50,7 +50,7 @@ impl PrWorktreeComponent {
             .border_type(BorderType::Rounded)
             .border_style(super::POPUP_BORDER_STYLE)
             .style(super::POPUP_BG_STYLE)
-            .title(Line::from(" Worktree from PR ").style(Style::new().fg(CYAN.c300).bold()))
+            .title(Line::from(" Worktree from PR ").style(Style::new().fg(GREEN.c300).bold()))
             .title_bottom(keybinding_hint());
 
         let inner_area = outer_block.inner(area);
@@ -144,9 +144,9 @@ impl PrWorktreeComponent {
 
 fn keybinding_hint() -> Line<'static> {
     Line::from(vec![
-        Span::styled("[Enter] ", Style::new().fg(AMBER.c300).bold()),
+        Span::styled("[Enter] ", Style::new().fg(BLUE.c400).bold()),
         Span::styled("open", Style::new().fg(SLATE.c500)),
-        Span::styled("  [Esc] ", Style::new().fg(AMBER.c300).bold()),
+        Span::styled("  [Esc] ", Style::new().fg(BLUE.c400).bold()),
         Span::styled("cancel ", Style::new().fg(SLATE.c500)),
     ])
     .right_aligned()
