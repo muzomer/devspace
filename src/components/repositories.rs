@@ -87,9 +87,10 @@ impl RepositoriesComponent {
 
             f.render_widget(
                 Paragraph::new(Line::from(vec![
-                    Span::styled(" / ", Style::new().fg(GREEN.c500).bold()),
+                    Span::styled(" / ", Style::new().fg(GREEN.c300).bold()),
                     Span::styled(self.filter.value.clone(), Style::new().white()),
-                ])),
+                ]))
+                .style(super::ACTIVE_INPUT_STYLE),
                 filter_line,
             );
             f.set_cursor_position((
@@ -98,7 +99,7 @@ impl RepositoriesComponent {
             ));
             f.render_widget(
                 Paragraph::new("─".repeat(sep_line.width as usize))
-                    .style(Style::new().fg(SLATE.c700)),
+                    .style(Style::new().fg(GREEN.c700).bg(GREEN.c950)),
                 sep_line,
             );
             list_area
