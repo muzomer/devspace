@@ -22,8 +22,10 @@ pub use worktrees::WorktreesComponent;
 const SELECTED_STYLE: Style = Style::new().bg(BLUE.c800).add_modifier(Modifier::BOLD);
 /// Subtle blue-gray border for the main worktrees panel.
 const BORDER_STYLE: Style = Style::new().fg(SLATE.c500);
-/// Sky-blue border used by all popup / dialog windows.
-const POPUP_BORDER_STYLE: Style = Style::new().fg(SKY.c600);
+/// Same border as the main panel; popup elevation comes from POPUP_BG_STYLE instead.
+const POPUP_BORDER_STYLE: Style = Style::new().fg(SLATE.c500);
+/// Slightly lighter dark background that lifts popup / dialog windows above the main panel.
+const POPUP_BG_STYLE: Style = Style::new().bg(SLATE.c800);
 /// Bright sky-blue border for an active / focused text input.
 const ACTIVE_BORDER_STYLE: Style = Style::new().fg(SKY.c400);
 

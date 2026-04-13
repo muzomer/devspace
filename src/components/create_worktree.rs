@@ -58,6 +58,7 @@ impl CreateWorktreeComponent {
         let outer_block = Block::bordered()
             .border_type(BorderType::Rounded)
             .border_style(super::POPUP_BORDER_STYLE)
+            .style(super::POPUP_BG_STYLE)
             .title(Line::from(" New Worktree ").style(Style::new().fg(VIOLET.c200).bold()))
             .title_top(
                 Line::from(format!(" repo: {} ", self.repo_name))

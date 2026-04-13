@@ -38,6 +38,7 @@ impl ConfirmComponent {
         let outer_block = Block::bordered()
             .border_type(BorderType::Rounded)
             .border_style(super::POPUP_BORDER_STYLE)
+            .style(super::POPUP_BG_STYLE)
             .title(title)
             .title_bottom(keybinding_hint());
 
