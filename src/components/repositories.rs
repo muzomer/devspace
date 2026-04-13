@@ -8,7 +8,7 @@ use crate::git::Repository;
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
     style::{
-        palette::tailwind::{BLUE, GREEN, SLATE},
+        palette::tailwind::{GREEN, RED, SLATE},
         Style, Stylize,
     },
     text::{Line, Span},
@@ -211,9 +211,9 @@ impl RepositoriesComponent {
 
 fn repos_keybinding_hint() -> Line<'static> {
     Line::from(vec![
-        Span::styled("[Enter] ", Style::new().fg(BLUE.c400).bold()),
+        Span::styled("[Enter] ", Style::new().fg(GREEN.c400).bold()),
         Span::styled("select", Style::new().fg(SLATE.c500)),
-        Span::styled("  [Esc] ", Style::new().fg(BLUE.c400).bold()),
+        Span::styled("  [Esc] ", Style::new().fg(RED.c400).bold()),
         Span::styled("close ", Style::new().fg(SLATE.c500)),
     ])
     .right_aligned()

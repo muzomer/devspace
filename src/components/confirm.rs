@@ -1,7 +1,7 @@
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{
-        palette::tailwind::{BLUE, GREEN, RED, SLATE},
+        palette::tailwind::{GREEN, RED, SLATE},
         Style, Stylize,
     },
     text::{Line, Span},
@@ -68,9 +68,9 @@ impl ConfirmComponent {
 
 fn keybinding_hint() -> Line<'static> {
     Line::from(vec![
-        Span::styled("[Enter] ", Style::new().fg(BLUE.c400).bold()),
+        Span::styled("[Enter] ", Style::new().fg(RED.c400).bold()),
         Span::styled("confirm", Style::new().fg(SLATE.c500)),
-        Span::styled("  [Esc] ", Style::new().fg(BLUE.c400).bold()),
+        Span::styled("  [Esc] ", Style::new().fg(GREEN.c400).bold()),
         Span::styled("cancel ", Style::new().fg(SLATE.c500)),
     ])
     .right_aligned()
