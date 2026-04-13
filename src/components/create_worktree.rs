@@ -58,7 +58,7 @@ impl CreateWorktreeComponent {
         let outer_block = Block::bordered()
             .border_type(BorderType::Rounded)
             .border_style(super::POPUP_BORDER_STYLE)
-            .title(Line::from(" New Worktree ").style(Style::new().fg(VIOLET.c300).bold()))
+            .title(Line::from(" New Worktree ").style(Style::new().fg(VIOLET.c200).bold()))
             .title_top(
                 Line::from(format!(" repo: {} ", self.repo_name))
                     .style(Style::new().fg(SLATE.c400))
@@ -175,10 +175,10 @@ impl CreateWorktreeComponent {
 
 fn keybinding_hint() -> Line<'static> {
     Line::from(vec![
-        Span::styled("[Enter] ", Style::new().white().bold()),
-        Span::styled("confirm", Style::new().dark_gray()),
-        Span::styled("  [Esc] ", Style::new().white().bold()),
-        Span::styled("cancel ", Style::new().dark_gray()),
+        Span::styled("[Enter] ", Style::new().fg(AMBER.c300).bold()),
+        Span::styled("confirm", Style::new().fg(SLATE.c500)),
+        Span::styled("  [Esc] ", Style::new().fg(AMBER.c300).bold()),
+        Span::styled("cancel ", Style::new().fg(SLATE.c500)),
     ])
     .right_aligned()
 }

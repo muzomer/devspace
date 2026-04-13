@@ -7,8 +7,11 @@ use super::list::ItemOrder;
 use crate::git::Repository;
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
-    style::{Style, Stylize},
-    text::Line,
+    style::{
+        palette::tailwind::{AMBER, SLATE, VIOLET},
+        Style, Stylize,
+    },
+    text::{Line, Span},
     widgets::{
         Block, BorderType, Clear, List, ListDirection, ListItem, ListState, Scrollbar,
         ScrollbarOrientation, ScrollbarState, StatefulWidget,
@@ -35,7 +38,7 @@ impl RepositoriesComponent {
     pub fn new(repositories: Vec<Repository>) -> Self {
         Self {
             repositories,
-            filter: FilterComponent::new(" Filter Repositories ".to_string()),
+            filter: FilterComponent::new(" Repositories ".to_string()),
             state: ListState::default().with_selected(Some(0)),
             selected_index: Some(0),
             focus: Focus::Filter,
@@ -54,9 +57,13 @@ impl RepositoriesComponent {
         let mut block = Block::bordered()
             .border_type(BorderType::Rounded)
             .border_style(super::POPUP_BORDER_STYLE)
+            .title(
+                Line::from(format!(" Repositories ({}) ", self.filtered_items().len()))
+                    .style(Style::new().fg(VIOLET.c300).bold()),
+            )
             .title_alignment(Alignment::Center);
         if matches!(mode, InputMode::Normal) {
-            block = block.title_bottom(Line::from(" ? help ").dark_gray().right_aligned());
+            block = block.title_bottom(repos_keybinding_hint());
         }
         let inner_area = block.inner(repos_list_area);
 
@@ -158,6 +165,16 @@ impl RepositoriesComponent {
             None => None,
         }
     }
+}
+
+fn repos_keybinding_hint() -> Line<'static> {
+    Line::from(vec![
+        Span::styled("[Enter] ", Style::new().fg(AMBER.c300).bold()),
+        Span::styled("select", Style::new().fg(SLATE.c500)),
+        Span::styled("  [Esc] ", Style::new().fg(AMBER.c300).bold()),
+        Span::styled("close ", Style::new().fg(SLATE.c500)),
+    ])
+    .right_aligned()
 }
 
 impl From<&Repository> for ListItem<'_> {

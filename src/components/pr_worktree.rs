@@ -1,8 +1,8 @@
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{
-        palette::tailwind::{SLATE, VIOLET},
-        Color, Style, Stylize,
+        palette::tailwind::{AMBER, RED, SLATE, VIOLET},
+        Style, Stylize,
     },
     text::{Line, Span},
     widgets::{Block, BorderType, Clear, Padding, Paragraph, Widget},
@@ -49,7 +49,7 @@ impl PrWorktreeComponent {
         let outer_block = Block::bordered()
             .border_type(BorderType::Rounded)
             .border_style(super::POPUP_BORDER_STYLE)
-            .title(Line::from(" New Worktree from PR ").style(Style::new().fg(VIOLET.c300).bold()))
+            .title(Line::from(" Worktree from PR ").style(Style::new().fg(VIOLET.c200).bold()))
             .title_bottom(keybinding_hint());
 
         let inner_area = outer_block.inner(area);
@@ -79,7 +79,7 @@ impl PrWorktreeComponent {
 
         if let Some(err) = &self.error {
             Paragraph::new(err.as_str())
-                .style(Style::new().fg(Color::Red))
+                .style(Style::new().fg(RED.c400))
                 .render(status_area, frame.buffer_mut());
         }
 
@@ -143,10 +143,10 @@ impl PrWorktreeComponent {
 
 fn keybinding_hint() -> Line<'static> {
     Line::from(vec![
-        Span::styled("[Enter] ", Style::new().white().bold()),
-        Span::styled("open", Style::new().dark_gray()),
-        Span::styled("  [Esc] ", Style::new().white().bold()),
-        Span::styled("cancel ", Style::new().dark_gray()),
+        Span::styled("[Enter] ", Style::new().fg(AMBER.c300).bold()),
+        Span::styled("open", Style::new().fg(SLATE.c500)),
+        Span::styled("  [Esc] ", Style::new().fg(AMBER.c300).bold()),
+        Span::styled("cancel ", Style::new().fg(SLATE.c500)),
     ])
     .right_aligned()
 }
