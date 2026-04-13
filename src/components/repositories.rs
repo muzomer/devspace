@@ -8,12 +8,12 @@ use crate::git::Repository;
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
     style::{
-        palette::tailwind::{AMBER, SLATE, VIOLET},
+        palette::tailwind::{AMBER, SKY, SLATE, VIOLET},
         Style, Stylize,
     },
     text::{Line, Span},
     widgets::{
-        Block, BorderType, Clear, List, ListDirection, ListItem, ListState, Scrollbar,
+        Block, BorderType, Clear, List, ListDirection, ListItem, ListState, Paragraph, Scrollbar,
         ScrollbarOrientation, ScrollbarState, StatefulWidget,
     },
     Frame,
@@ -38,7 +38,7 @@ impl RepositoriesComponent {
     pub fn new(repositories: Vec<Repository>) -> Self {
         Self {
             repositories,
-            filter: FilterComponent::new(" Repositories ".to_string()),
+            filter: FilterComponent::new(),
             state: ListState::default().with_selected(Some(0)),
             selected_index: Some(0),
             focus: Focus::Filter,
@@ -47,41 +47,83 @@ impl RepositoriesComponent {
 
     pub fn draw(&mut self, f: &mut Frame, rect: Rect, mode: InputMode) {
         f.render_widget(Clear, rect);
-        let [filter_area, repos_list_area] =
-            Layout::vertical([Constraint::Length(3), Constraint::Min(1)]).areas(rect);
-        self.filter.draw(
-            f,
-            filter_area,
-            matches!(mode, InputMode::Insert) && matches!(self.focus, Focus::Filter),
-        );
+
+        let total = self.filtered_items().len();
+        let title = {
+            let mut spans = vec![
+                Span::raw(" "),
+                Span::styled("Repositories", Style::new().fg(VIOLET.c300).bold()),
+                Span::styled(format!(" ({}) ", total), Style::new().fg(SLATE.c400)),
+            ];
+            if !self.filter.value.is_empty() && matches!(mode, InputMode::Normal) {
+                spans.push(Span::styled(
+                    format!("/{} ", self.filter.value),
+                    Style::new().fg(SLATE.c500),
+                ));
+            }
+            Line::from(spans).alignment(Alignment::Center)
+        };
+
         let mut block = Block::bordered()
             .border_type(BorderType::Rounded)
             .border_style(super::POPUP_BORDER_STYLE)
-            .title(
-                Line::from(format!(" Repositories ({}) ", self.filtered_items().len()))
-                    .style(Style::new().fg(VIOLET.c300).bold()),
-            )
-            .title_alignment(Alignment::Center);
+            .title(title);
         if matches!(mode, InputMode::Normal) {
             block = block.title_bottom(repos_keybinding_hint());
         }
-        let inner_area = block.inner(repos_list_area);
 
-        let list = List::new(self.filtered_items())
-            .block(block)
+        let inner_area = block.inner(rect);
+        f.render_widget(block, rect);
+
+        let in_filter = matches!(mode, InputMode::Insert) && matches!(self.focus, Focus::Filter);
+
+        let list_area = if in_filter {
+            let [filter_line, sep_line, list_area] = Layout::vertical([
+                Constraint::Length(1),
+                Constraint::Length(1),
+                Constraint::Fill(1),
+            ])
+            .areas(inner_area);
+
+            f.render_widget(
+                Paragraph::new(Line::from(vec![
+                    Span::styled(" / ", Style::new().fg(SKY.c400).bold()),
+                    Span::styled(self.filter.value.clone(), Style::new().white()),
+                ])),
+                filter_line,
+            );
+            f.set_cursor_position((
+                filter_line.x + 3 + self.filter.cursor_pos() as u16,
+                filter_line.y,
+            ));
+            f.render_widget(
+                Paragraph::new("─".repeat(sep_line.width as usize))
+                    .style(Style::new().fg(SLATE.c700)),
+                sep_line,
+            );
+            list_area
+        } else {
+            inner_area
+        };
+
+        let items: Vec<ListItem> = self
+            .filtered_items()
+            .iter()
+            .map(|r| ListItem::new(r.name()))
+            .collect();
+        let list = List::new(items)
             .style(Style::new().white())
             .highlight_style(SELECTED_STYLE)
             .direction(ListDirection::TopToBottom);
-        StatefulWidget::render(list, repos_list_area, f.buffer_mut(), &mut self.state);
+        StatefulWidget::render(list, list_area, f.buffer_mut(), &mut self.state);
 
-        let total = self.filtered_items().len();
         let mut scroll_state = ScrollbarState::new(total).position(self.state.offset());
         let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
             .begin_symbol(None)
             .end_symbol(None)
             .thumb_style(Style::new().dark_gray())
             .track_style(Style::new().dark_gray());
-        f.render_stateful_widget(scrollbar, inner_area, &mut scroll_state);
+        f.render_stateful_widget(scrollbar, list_area, &mut scroll_state);
     }
 
     pub fn handle_action(&mut self, action: Action) -> EventState {
@@ -175,12 +217,6 @@ fn repos_keybinding_hint() -> Line<'static> {
         Span::styled("close ", Style::new().fg(SLATE.c500)),
     ])
     .right_aligned()
-}
-
-impl From<&Repository> for ListItem<'_> {
-    fn from(value: &Repository) -> Self {
-        ListItem::new(value.name())
-    }
 }
 
 impl ListComponent<Repository> for RepositoriesComponent {
