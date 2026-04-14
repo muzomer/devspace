@@ -5,6 +5,7 @@ mod help;
 mod list;
 mod pr_worktree;
 mod repositories;
+mod select_directory;
 mod worktrees;
 
 pub use confirm::ConfirmComponent;
@@ -16,6 +17,7 @@ use ratatui::style::{
     Modifier, Style,
 };
 pub use repositories::RepositoriesComponent;
+pub use select_directory::SelectDirectoryComponent;
 pub use worktrees::WorktreesComponent;
 
 /// Selected item: blue bg matching lazygit's selectedLineBgColor.

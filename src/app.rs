@@ -8,7 +8,7 @@ use crate::{
     cli,
     components::{
         Action, ConfirmComponent, CreateWorktreeComponent, EventState, HelpComponent, HelpEntry,
-        PrWorktreeComponent, RepositoriesComponent, WorktreesComponent,
+        PrWorktreeComponent, RepositoriesComponent, SelectDirectoryComponent, WorktreesComponent,
     },
     git, github,
     keymap::{self, InputMode},
@@ -22,6 +22,7 @@ pub enum Focus {
     Confirm,
     Help,
     PrWorktree,
+    SelectReposDir,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -37,12 +38,14 @@ pub struct App {
     confirm_component: ConfirmComponent,
     help_component: HelpComponent,
     pr_worktree_component: PrWorktreeComponent,
+    select_directory_component: SelectDirectoryComponent,
     args: cli::Args,
     focus: Focus,
     previous_focus: Focus,
     mode: InputMode,
     confirm_action: ConfirmAction,
     pending_pr: Option<(github::PrUrl, github::PrInfo)>,
+    pending_clone_auto: bool,
     pub selected_path: Option<String>,
 }
 
@@ -58,6 +61,7 @@ impl App {
 
         let repositories_component = RepositoriesComponent::new(repositories);
         let worktrees_component = WorktreesComponent::new(worktrees, args.worktrees_dir.clone());
+        let select_directory_component = SelectDirectoryComponent::new(args.repos_dirs.clone());
         Self {
             worktrees_component,
             repositories_component,
@@ -65,12 +69,14 @@ impl App {
             confirm_component: ConfirmComponent::new(String::new(), String::new(), String::new()),
             help_component: HelpComponent::new(vec![]),
             pr_worktree_component: PrWorktreeComponent::new(),
+            select_directory_component,
             focus: Focus::Worktrees,
             previous_focus: Focus::Worktrees,
             args,
             mode: InputMode::Normal,
             confirm_action: ConfirmAction::DeleteWorktree,
             pending_pr: None,
+            pending_clone_auto: false,
             selected_path: None,
         }
     }
@@ -133,6 +139,17 @@ impl App {
                 .areas(popup_area);
             self.pr_worktree_component.draw(frame, popup_area);
         }
+
+        if let Focus::SelectReposDir = self.focus {
+            let n = self.select_directory_component.dirs.len() as u16;
+            let [popup_area] = Layout::vertical([Constraint::Length(n.min(10) + 4)])
+                .flex(Flex::Center)
+                .areas(full_area);
+            let [popup_area] = Layout::horizontal([Constraint::Percentage(60)])
+                .flex(Flex::Center)
+                .areas(popup_area);
+            self.select_directory_component.draw(frame, popup_area);
+        }
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) -> EventState {
@@ -148,6 +165,7 @@ impl App {
             Focus::Confirm => self.handle_confirm_action(action),
             Focus::Help => self.handle_help_action(action),
             Focus::PrWorktree => self.handle_pr_worktree_action(action),
+            Focus::SelectReposDir => self.handle_select_repos_dir_action(action),
         }
     }
 
@@ -409,6 +427,16 @@ impl App {
     }
 
     fn clone_and_open_pr(&mut self, auto: bool) -> EventState {
+        if self.args.repos_dirs.len() > 1 {
+            self.pending_clone_auto = auto;
+            self.focus = Focus::SelectReposDir;
+            self.mode = InputMode::Normal;
+            return EventState::Consumed;
+        }
+        self.do_clone_with_dir(self.args.repos_dirs[0].clone(), auto)
+    }
+
+    fn do_clone_with_dir(&mut self, repos_dir: String, auto: bool) -> EventState {
         let (pr_url, pr_info) = match self.pending_pr.take() {
             Some(p) => p,
             None => {
@@ -417,15 +445,13 @@ impl App {
             }
         };
 
-        if let Err(e) =
-            github::clone_repository(&pr_url.owner, &pr_url.repo, &self.args.repos_dirs[0])
-        {
+        if let Err(e) = github::clone_repository(&pr_url.owner, &pr_url.repo, &repos_dir) {
             self.worktrees_component.last_error = Some(format!("{:#}", e));
             self.focus = Focus::Worktrees;
             return EventState::Consumed;
         }
 
-        let repo_path = format!("{}/{}", self.args.repos_dirs[0], pr_url.repo);
+        let repo_path = format!("{}/{}", repos_dir, pr_url.repo);
         match git::Repository::from_path(&repo_path, false) {
             Ok(repo) => {
                 self.repositories_component.add_repository(repo);
@@ -441,6 +467,24 @@ impl App {
         }
 
         self.open_worktree_for_pr(pr_info, auto)
+    }
+
+    fn handle_select_repos_dir_action(&mut self, action: Action) -> EventState {
+        match action {
+            Action::Quit => EventState::Exit,
+            Action::Select => {
+                let dir = self.select_directory_component.selected_dir().to_string();
+                let auto = self.pending_clone_auto;
+                self.do_clone_with_dir(dir, auto)
+            }
+            Action::ClosePopup | Action::ExitInsertMode => {
+                self.pending_pr = None;
+                self.focus = Focus::Worktrees;
+                self.mode = InputMode::Normal;
+                EventState::Consumed
+            }
+            _ => self.select_directory_component.handle_action(action),
+        }
     }
 
     fn open_worktree_for_pr(&mut self, pr_info: github::PrInfo, auto: bool) -> EventState {
@@ -580,6 +624,16 @@ impl App {
                 HelpEntry::Binding("Esc", "Cancel"),
                 HelpEntry::Binding("Backspace", "Delete character"),
                 HelpEntry::Binding("Ctrl+C", "Quit"),
+            ],
+            (Focus::SelectReposDir, _) => vec![
+                HelpEntry::Section("Keybindings"),
+                HelpEntry::Binding("j / ↓", "Move down"),
+                HelpEntry::Binding("k / ↑", "Move up"),
+                HelpEntry::Binding("g / Home", "Go to first"),
+                HelpEntry::Binding("G / End", "Go to last"),
+                HelpEntry::Binding("Enter", "Clone to selected directory"),
+                HelpEntry::Binding("Esc", "Cancel"),
+                HelpEntry::Binding("q / Ctrl+C", "Quit"),
             ],
             _ => vec![],
         }
