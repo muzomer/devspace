@@ -6,11 +6,14 @@ use nucleo_matcher::{
 };
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::{Color, Modifier, Style, Stylize},
+    style::{
+        palette::tailwind::{AMBER, BLUE, GREEN, RED, SLATE},
+        Color, Modifier, Style, Stylize,
+    },
     text::{Line, Span},
     widgets::{
-        Block, List, ListItem, ListState, Scrollbar, ScrollbarOrientation, ScrollbarState,
-        StatefulWidget,
+        Block, List, ListItem, ListState, Paragraph, Scrollbar, ScrollbarOrientation,
+        ScrollbarState, StatefulWidget,
     },
     Frame,
 };
@@ -36,7 +39,7 @@ impl WorktreesComponent {
     pub fn new(worktrees: Vec<git::Worktree>, worktrees_dir: String) -> WorktreesComponent {
         let selected_index = if worktrees.is_empty() { None } else { Some(0) };
         Self {
-            filter: FilterComponent::new(" Filter Worktrees ".to_string()),
+            filter: FilterComponent::new(),
             state: ListState::default().with_selected(selected_index),
             focus: Focus::Filter,
             selected_index,
@@ -49,8 +52,7 @@ impl WorktreesComponent {
     pub fn draw(&mut self, f: &mut Frame, rect: Rect, mode: InputMode, is_active: bool) {
         let worktrees_dir = self.worktrees_dir.clone();
 
-        // Collect (remote_status, is_dirty, path) as owned data so the mutable borrow from
-        // filtered_items() fully ends before we access other fields of self.
+        // Collect display data — ends the filtered_items() borrow before we need &self again.
         let display_data: Vec<(RemoteStatus, bool, String)> = {
             let filtered = self.filtered_items();
             filtered
@@ -66,43 +68,96 @@ impl WorktreesComponent {
             })
             .collect();
 
-        let current = self.selected_index.map(|i| i + 1).unwrap_or(0);
+        // B: cap current to total so a stale selected_index never shows x > y in (x/y)
+        let current = self.selected_index.map(|i| (i + 1).min(total)).unwrap_or(0);
 
         let mode_indicator = match mode {
-            InputMode::Normal => Line::from(" NORMAL ").cyan().bold(),
-            InputMode::Insert => Line::from(" INSERT ").yellow().bold(),
+            InputMode::Normal => Line::from(" NORMAL ").style(Style::new().fg(GREEN.c400).bold()),
+            InputMode::Insert => Line::from(" INSERT ").style(Style::new().fg(AMBER.c300).bold()),
         };
-
         let bottom_left = match &self.last_error {
             Some(err) => Line::from(format!(" {} ", err)).red().bold(),
             None => mode_indicator,
         };
 
+        // When a filter is active in Normal mode, show it in the title so it's always visible.
+        let title = {
+            let mut spans = vec![
+                Span::raw(" "),
+                Span::styled("Worktrees", Style::new().fg(GREEN.c400).bold()),
+                Span::styled(
+                    format!(" ({}/{}) ", current, total),
+                    Style::new().fg(SLATE.c400),
+                ),
+            ];
+            if !self.filter.value.is_empty() && matches!(mode, InputMode::Normal) {
+                spans.push(Span::styled(
+                    format!("/{} ", self.filter.value),
+                    Style::new().fg(SLATE.c500),
+                ));
+            }
+            Line::from(spans)
+        };
+
         let mut block = Block::bordered()
             .border_type(ratatui::widgets::BorderType::Rounded)
             .border_style(super::BORDER_STYLE)
-            .title(format!(" Worktrees ({}/{}) ", current, total))
+            .title(title)
             .title_bottom(bottom_left);
 
+        // C: style ? help hint with AMBER.c300 to match the rest of the keybinding palette
         if matches!(mode, InputMode::Normal) {
-            block = block.title_bottom(Line::from(" ? help ").dark_gray().right_aligned());
+            block = block.title_bottom(
+                Line::from(vec![
+                    Span::styled(" ? ", Style::new().fg(BLUE.c400).bold()),
+                    Span::styled("help ", Style::new().fg(SLATE.c500)),
+                ])
+                .right_aligned(),
+            );
         }
 
-        let [filter_area, list_area] =
-            Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(rect);
+        // A: render the block frame first, then lay out filter + list inside its inner area
+        let inner_area = block.inner(rect);
+        f.render_widget(block, rect);
 
-        self.filter.draw(
-            f,
-            filter_area,
-            is_active && matches!(mode, InputMode::Insert) && matches!(self.focus, Focus::Filter),
-        );
+        let in_filter =
+            is_active && matches!(mode, InputMode::Insert) && matches!(self.focus, Focus::Filter);
+
+        let list_area = if in_filter {
+            // Split: filter line / separator / list
+            let [filter_line, sep_line, list_area] = Layout::vertical([
+                Constraint::Length(1),
+                Constraint::Length(1),
+                Constraint::Fill(1),
+            ])
+            .areas(inner_area);
+
+            f.render_widget(
+                Paragraph::new(Line::from(vec![
+                    Span::styled(" / ", Style::new().fg(GREEN.c300).bold()),
+                    Span::styled(self.filter.value.clone(), Style::new().white()),
+                ])),
+                filter_line,
+            );
+            // " / " prefix is 3 chars wide
+            f.set_cursor_position((
+                filter_line.x + 3 + self.filter.cursor_pos() as u16,
+                filter_line.y,
+            ));
+            f.render_widget(
+                Paragraph::new("─".repeat(sep_line.width as usize))
+                    .style(Style::new().fg(SLATE.c700)),
+                sep_line,
+            );
+            list_area
+        } else {
+            inner_area
+        };
 
         let list = List::new(items)
-            .block(block)
             .style(Style::new().white())
             .highlight_style(SELECTED_STYLE)
             .direction(ratatui::widgets::ListDirection::TopToBottom);
-
         StatefulWidget::render(list, list_area, f.buffer_mut(), &mut self.state);
 
         let mut scroll_state = ScrollbarState::new(total).position(self.state.offset());
@@ -139,10 +194,12 @@ impl WorktreesComponent {
             }
             Action::InsertChar(c) => {
                 self.filter.enter_char(c);
+                self.select(ItemOrder::First);
                 EventState::Consumed
             }
             Action::DeleteChar => {
                 self.filter.delete_char();
+                self.select(ItemOrder::First);
                 EventState::Consumed
             }
             _ => EventState::NotConsumed,
@@ -228,9 +285,9 @@ fn worktree_to_list_item(
     worktrees_dir: &str,
 ) -> ListItem<'static> {
     let (remote_indicator, indicator_color) = match remote_status {
-        RemoteStatus::Exists => ("✔", Color::Green),
-        RemoteStatus::Gone => ("✘", Color::Red),
-        RemoteStatus::NeverPushed => ("⬆", Color::Yellow),
+        RemoteStatus::Exists => ("✔", GREEN.c400),
+        RemoteStatus::Gone => ("✘", RED.c400),
+        RemoteStatus::NeverPushed => ("⬆", AMBER.c400),
     };
 
     let indicator_span = Span::styled(
@@ -249,8 +306,8 @@ fn worktree_to_list_item(
     let line = if let Some(sep) = relative.find('/') {
         let repo = &relative[..sep];
         let branch = relative[sep + 1..].trim_end_matches('/');
-        let repo_span = Span::styled(repo.to_string(), Style::default().fg(Color::DarkGray));
-        let sep_span = Span::styled(" / ", Style::default().fg(Color::DarkGray));
+        let repo_span = Span::styled(repo.to_string(), Style::default().fg(SLATE.c400));
+        let sep_span = Span::styled(" / ", Style::default().fg(SLATE.c600));
         let branch_span = Span::styled(
             branch.to_string(),
             Style::default()
@@ -258,7 +315,7 @@ fn worktree_to_list_item(
                 .add_modifier(Modifier::BOLD),
         );
         if is_dirty {
-            let dirty_span = Span::styled("*", Style::default().fg(Color::Yellow));
+            let dirty_span = Span::styled(" *", Style::default().fg(AMBER.c400));
             Line::from(vec![
                 indicator_span,
                 repo_span,
@@ -272,7 +329,7 @@ fn worktree_to_list_item(
     } else {
         let path_span = Span::from(relative.to_string());
         if is_dirty {
-            let dirty_span = Span::styled("*", Style::default().fg(Color::Yellow));
+            let dirty_span = Span::styled(" *", Style::default().fg(AMBER.c400));
             Line::from(vec![indicator_span, path_span, dirty_span])
         } else {
             Line::from(vec![indicator_span, path_span])

@@ -1,6 +1,9 @@
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::{Color, Style, Stylize},
+    style::{
+        palette::tailwind::{AMBER, GREEN, RED, SLATE},
+        Color, Style, Stylize,
+    },
     text::{Line, Span},
     widgets::{Block, BorderType, Clear, Padding, Paragraph, Widget},
     Frame,
@@ -47,18 +50,18 @@ impl CreateWorktreeComponent {
 
         let input_border_style =
             if self.new_worktree_name.is_empty() || is_valid_branch_name(&self.new_worktree_name) {
-                Style::new().fg(Color::Cyan)
+                super::ACTIVE_BORDER_STYLE
             } else {
                 Style::new().fg(Color::Red)
             };
 
         let outer_block = Block::bordered()
             .border_type(BorderType::Rounded)
-            .border_style(super::BORDER_STYLE)
-            .title(Line::from(" New Worktree ").style(Style::new().fg(Color::Gray)))
+            .border_style(super::POPUP_BORDER_STYLE)
+            .title(Line::from(" New Worktree ").style(Style::new().fg(GREEN.c300).bold()))
             .title_top(
                 Line::from(format!(" repo: {} ", self.repo_name))
-                    .style(Style::new().fg(Color::Gray))
+                    .style(Style::new().fg(SLATE.c400))
                     .right_aligned(),
             )
             .title_bottom(keybinding_hint());
@@ -75,7 +78,9 @@ impl CreateWorktreeComponent {
         .horizontal_margin(4)
         .areas(inner_area);
 
-        Paragraph::new("Branch name:").render(label_area, frame.buffer_mut());
+        Paragraph::new("Branch name:")
+            .style(Style::new().fg(SLATE.c300))
+            .render(label_area, frame.buffer_mut());
 
         Paragraph::new(self.new_worktree_name.as_str())
             .block(
@@ -88,11 +93,11 @@ impl CreateWorktreeComponent {
 
         if let Some(warning) = &self.warning {
             Paragraph::new(warning.as_str())
-                .style(Style::new().fg(Color::Yellow))
+                .style(Style::new().fg(AMBER.c300))
                 .render(hint_area, frame.buffer_mut());
         } else if let Some(hint) = &self.base_branch_hint {
             Paragraph::new(hint.as_str())
-                .style(Style::new().fg(Color::DarkGray))
+                .style(Style::new().fg(SLATE.c400))
                 .render(hint_area, frame.buffer_mut());
         }
 
@@ -170,10 +175,10 @@ impl CreateWorktreeComponent {
 
 fn keybinding_hint() -> Line<'static> {
     Line::from(vec![
-        Span::styled("[Enter] ", Style::new().white().bold()),
-        Span::styled("confirm", Style::new().dark_gray()),
-        Span::styled("  [Esc] ", Style::new().white().bold()),
-        Span::styled("cancel ", Style::new().dark_gray()),
+        Span::styled("[Enter] ", Style::new().fg(GREEN.c400).bold()),
+        Span::styled("confirm", Style::new().fg(SLATE.c500)),
+        Span::styled("  [Esc] ", Style::new().fg(RED.c400).bold()),
+        Span::styled("cancel ", Style::new().fg(SLATE.c500)),
     ])
     .right_aligned()
 }

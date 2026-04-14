@@ -1,6 +1,9 @@
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::{Color, Style, Stylize},
+    style::{
+        palette::tailwind::{GREEN, RED, SLATE},
+        Style, Stylize,
+    },
     text::{Line, Span},
     widgets::{Block, BorderType, Clear, Paragraph, Widget},
     Frame,
@@ -26,10 +29,16 @@ impl ConfirmComponent {
     pub fn draw(&mut self, frame: &mut Frame, area: Rect) {
         frame.render_widget(Clear, area);
 
+        let title = Line::from(vec![
+            Span::styled(" ⚠ ", Style::new().fg(RED.c400).bold()),
+            Span::styled(self.title.clone(), Style::new().fg(GREEN.c300).bold()),
+            Span::raw(" "),
+        ]);
+
         let outer_block = Block::bordered()
             .border_type(BorderType::Rounded)
-            .border_style(super::BORDER_STYLE)
-            .title(Line::from(format!(" {} ", self.title)).style(Style::new().fg(Color::Gray)))
+            .border_style(super::POPUP_BORDER_STYLE)
+            .title(title)
             .title_bottom(keybinding_hint());
 
         let inner_area = outer_block.inner(area);
@@ -44,9 +53,11 @@ impl ConfirmComponent {
         .horizontal_margin(4)
         .areas(inner_area);
 
-        Paragraph::new(self.label.as_str()).render(label_area, frame.buffer_mut());
-        Paragraph::new(self.detail.as_str())
-            .style(Style::default().fg(Color::Red).bold())
+        Paragraph::new(self.label.as_str())
+            .style(Style::new().fg(SLATE.c200).bold())
+            .render(label_area, frame.buffer_mut());
+        Paragraph::new(format!(" {} ", self.detail))
+            .style(Style::new().fg(RED.c300).bg(RED.c950).bold())
             .render(detail_area, frame.buffer_mut());
     }
 
@@ -57,10 +68,10 @@ impl ConfirmComponent {
 
 fn keybinding_hint() -> Line<'static> {
     Line::from(vec![
-        Span::styled("[Enter] ", Style::new().white().bold()),
-        Span::styled("confirm", Style::new().dark_gray()),
-        Span::styled("  [Esc] ", Style::new().white().bold()),
-        Span::styled("cancel ", Style::new().dark_gray()),
+        Span::styled("[Enter] ", Style::new().fg(RED.c400).bold()),
+        Span::styled("confirm", Style::new().fg(SLATE.c500)),
+        Span::styled("  [Esc] ", Style::new().fg(GREEN.c400).bold()),
+        Span::styled("cancel ", Style::new().fg(SLATE.c500)),
     ])
     .right_aligned()
 }

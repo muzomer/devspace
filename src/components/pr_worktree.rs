@@ -1,6 +1,9 @@
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::{Color, Style, Stylize},
+    style::{
+        palette::tailwind::{GREEN, RED, SLATE},
+        Style, Stylize,
+    },
     text::{Line, Span},
     widgets::{Block, BorderType, Clear, Padding, Paragraph, Widget},
     Frame,
@@ -45,8 +48,8 @@ impl PrWorktreeComponent {
 
         let outer_block = Block::bordered()
             .border_type(BorderType::Rounded)
-            .border_style(super::BORDER_STYLE)
-            .title(Line::from(" New Worktree from PR ").style(Style::new().fg(Color::Gray)))
+            .border_style(super::POPUP_BORDER_STYLE)
+            .title(Line::from(" Worktree from PR ").style(Style::new().fg(GREEN.c300).bold()))
             .title_bottom(keybinding_hint());
 
         let inner_area = outer_block.inner(area);
@@ -61,20 +64,22 @@ impl PrWorktreeComponent {
         .horizontal_margin(4)
         .areas(inner_area);
 
-        Paragraph::new("GitHub PR URL:").render(label_area, frame.buffer_mut());
+        Paragraph::new("GitHub PR URL:")
+            .style(Style::new().fg(SLATE.c300))
+            .render(label_area, frame.buffer_mut());
 
         Paragraph::new(self.input.as_str())
             .block(
                 Block::bordered()
                     .border_type(BorderType::Rounded)
-                    .border_style(Style::new().fg(Color::Cyan))
+                    .border_style(super::ACTIVE_BORDER_STYLE)
                     .padding(Padding::horizontal(1)),
             )
             .render(input_area, frame.buffer_mut());
 
         if let Some(err) = &self.error {
             Paragraph::new(err.as_str())
-                .style(Style::new().fg(Color::Red))
+                .style(Style::new().fg(RED.c400))
                 .render(status_area, frame.buffer_mut());
         }
 
@@ -138,10 +143,10 @@ impl PrWorktreeComponent {
 
 fn keybinding_hint() -> Line<'static> {
     Line::from(vec![
-        Span::styled("[Enter] ", Style::new().white().bold()),
-        Span::styled("open", Style::new().dark_gray()),
-        Span::styled("  [Esc] ", Style::new().white().bold()),
-        Span::styled("cancel ", Style::new().dark_gray()),
+        Span::styled("[Enter] ", Style::new().fg(GREEN.c400).bold()),
+        Span::styled("open", Style::new().fg(SLATE.c500)),
+        Span::styled("  [Esc] ", Style::new().fg(RED.c400).bold()),
+        Span::styled("cancel ", Style::new().fg(SLATE.c500)),
     ])
     .right_aligned()
 }
