@@ -33,12 +33,12 @@ The idea is to simplify context switching between open PRs by having all the git
 
 ```
 .
-├── work_repos_dir
-│   ├── backend-repo
-│   └── frontend-repo
-├── personal_repos_dir
-│   └── side-project
-└── worktrees_dir
+├── work_repos_dir/           # work git repositories
+│   ├── backend-repo/
+│   └── frontend-repo/
+├── personal_repos_dir/       # personal git repositories
+│   └── side-project/
+└── worktrees_dir/            # worktrees managed by devspace
 ```
 
 Assume, there is a new feature to add a button in the UI, and that button requires a new endpoint in the backend. Worktrees can be created as below:
@@ -48,11 +48,15 @@ Assume, there is a new feature to add a button in the UI, and that button requir
 When these worktrees are created in `devspace` they will be stored under the `worktrees_dir` as below:
 
 ```
-└── worktrees_dir
-    ├── backend-repo
-    │   └── add-backend-api-for-the-new-button
-    └── frontend-repo
-        └── add-new-button-to-the-ui
+└── worktrees_dir/
+    ├── backend-repo/
+    │   └── add-backend-api-for-the-new-button/   # checked-out worktree
+    │       ├── src/
+    │       └── ...
+    └── frontend-repo/
+        └── add-new-button-to-the-ui/             # checked-out worktree
+            ├── src/
+            └── ...
 ```
 
 To switch between the worktrees, run `cd $(devspace)` to go the directory of the selected worktree.
