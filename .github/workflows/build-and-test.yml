@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest ]
+        os: [ubuntu-latest, macos-latest]
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
@@ -59,14 +59,14 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload Ubuntu release asset
+      - name: Upload Linux release asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/devspace-ubuntu-latest/devspace
-          asset_name: devspace-ubuntu-latest
+          asset_path: artifacts/devspace-linux-latest/devspace
+          asset_name: devspace-linux-latest
           asset_content_type: application/octet-stream
 
       - name: Upload macOS release asset
