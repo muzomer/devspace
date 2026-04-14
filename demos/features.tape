@@ -16,7 +16,7 @@ Enter
 Sleep 2s
 Show
 
-Type@0s "ls -ltrh ./worktrees-dir/"
+Type@0s "tree -d ./worktrees-dir/"
 Enter
 Sleep 2s
 
@@ -29,85 +29,95 @@ Sleep 1s
 Enter
 
 #############################################
+# Create first worktree
+#############################################
+
+Type "n"
+Sleep 1s
+
+# Go to second-repo
+Type "j"
+Sleep 800ms
+Enter
+Sleep 800ms
+
+# Hint shows "Will be created from HEAD" — type branch name
+Type@0s "feature-in-second-repo"
+Sleep 600ms
+Enter
+Sleep 600ms
+
+#############################################
+# Create second worktree from PR (manual)
+#############################################
+
+Type "p"
+Sleep 1s
+
+Type@0s "https://github.com/muzomer/third-repo/pull/2"
+Sleep 1s
+
+Enter
+Sleep 1s
+
+Enter
+Sleep 2s
+
+Enter
+Sleep 2s
+
+#############################################
+# Navigate the worktrees list
+#############################################
+
+Type "k"
+Sleep 500ms
+
+#############################################
 # Show help popup
 #############################################
 
 Type "?"
 Sleep 2s
 Escape
-Sleep 800ms
 
 #############################################
-# Navigate the worktrees list
+# Create third worktree from PR (auto-clone)
+# P = Shift+P — skips all confirmation prompts
 #############################################
 
-Type "j"
+Type "P"
+Sleep 1s
+
+Type@0s "https://github.com/muzomer/second-repo/pull/1"
 Sleep 500ms
-Type "j"
-Sleep 500ms
-Type "k"
-Sleep 500ms
+Enter
+Sleep 1s
 
 #############################################
 # Filter / search worktrees
 #############################################
 
 Type "i"
-Sleep 800ms
-Type@0s "dark"
 Sleep 1s
-Backspace
+Type@0s "dev"
+Sleep 800ms
 Backspace
 Backspace
 Backspace
 Escape
-Sleep 800ms
-
-#############################################
-# Create a new worktree (pick repo)
-#############################################
-
-Type "n"
 Sleep 1s
-
-# Move down to second-repo
-Type "j"
-Sleep 800ms
-Enter
-Sleep 800ms
-
-# Type branch name
-Type@0s "feature-in-second-repo"
-Sleep 600ms
-Enter
-Sleep 1s
-
-#############################################
-# Show the new worktree selected in the list
-#############################################
-
-Sleep 800ms
 
 #############################################
 # Delete a worktree (soft delete with confirm)
 #############################################
 
+Type "j"
+Sleep 400ms
 Type "d"
 Sleep 800ms
 Enter
-Sleep 1200ms
-
-#############################################
-# Open the PR URL popup (show the styling,
-# then cancel — no live GitHub needed)
-#############################################
-
-Type "p"
-Sleep 1s
-Type@0s "https://github.com/example/repo/pull/42"
-Sleep 800ms
-Escape
-Sleep 800ms
+Sleep 1500ms
 
 #############################################
 # Select a worktree — copies path and exits
@@ -126,6 +136,6 @@ Type@0s "cd -"
 Enter
 Sleep 1s
 
-Type@0s "ls -ldR worktrees-dir/*/*"
+Type@0s "tree -d worktrees-dir/"
 Enter
-Sleep 3s
+Sleep 4s
