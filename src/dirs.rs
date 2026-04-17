@@ -11,13 +11,13 @@ pub fn get_data_dir() -> eyre::Result<PathBuf> {
     };
     Ok(directory)
 }
-// pub fn get_config_dir() -> eyre::Result<PathBuf> {
-//     let directory = if let Ok(s) = std::env::var("DEVSPACE_CONFIG") {
-//         PathBuf::from(s)
-//     } else if let Some(proj_dirs) = ProjectDirs::from("com", "muzomer", "devspace") {
-//         proj_dirs.config_local_dir().to_path_buf()
-//     } else {
-//         return Err(eyre::eyre!("Unable to find config directory for devspace"));
-//     };
-//     Ok(directory)
-// }
+pub fn get_config_dir() -> eyre::Result<PathBuf> {
+    let directory = if let Ok(s) = std::env::var("DEVSPACE_CONFIG") {
+        PathBuf::from(s)
+    } else if let Some(proj_dirs) = ProjectDirs::from("com", "muzomer", "devspace") {
+        proj_dirs.config_local_dir().to_path_buf()
+    } else {
+        return Err(eyre::eyre!("Unable to find config directory for devspace"));
+    };
+    Ok(directory)
+}
