@@ -15,9 +15,9 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact_name: devspace-linux-latest
+            artifact_name: shanti-linux-latest
           - os: macos-latest
-            artifact_name: devspace-macos-latest
+            artifact_name: shanti-macos-latest
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
@@ -39,7 +39,7 @@ jobs:
         with:
           name: ${{ matrix.artifact_name }}
           path: |
-            target/release/devspace
+            target/release/shanti
 
   release:
     name: release
@@ -69,8 +69,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/devspace-linux-latest/devspace
-          asset_name: devspace-linux-latest
+          asset_path: artifacts/shanti-linux-latest/shanti
+          asset_name: shanti-linux-latest
           asset_content_type: application/octet-stream
 
       - name: Upload macOS release asset
@@ -79,6 +79,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/devspace-macos-latest/devspace
-          asset_name: devspace-macos-latest
+          asset_path: artifacts/shanti-macos-latest/shanti
+          asset_name: shanti-macos-latest
           asset_content_type: application/octet-stream
