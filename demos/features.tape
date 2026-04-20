@@ -9,9 +9,9 @@ Set Width 1200
 Set Height 600
 
 Hide
-Type@0s "export DEVSPACE_REPOS_DIR=./repos-dir"
+Type@0s "export SHANTI_REPOS_DIR=./repos-dir"
 Enter
-Type@0s "export DEVSPACE_WORKTREES_DIR=./worktrees-dir"
+Type@0s "export SHANTI_WORKTREES_DIR=./worktrees-dir"
 Enter
 Sleep 2s
 Show
@@ -21,10 +21,10 @@ Enter
 Sleep 2s
 
 #######################
-# Launch devspace     #
+# Launch shanti     #
 #######################
 
-Type@0s "cd $(devspace)"
+Type@0s "cd $(shanti)"
 Sleep 1s
 Enter
 

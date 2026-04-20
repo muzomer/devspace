@@ -6,16 +6,16 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 ENV PATH="/root/.cargo/bin:$PATH"
 
-COPY . /devspace/
+COPY . /shanti/
 
-WORKDIR /devspace/
+WORKDIR /shanti/
 
 RUN cargo install --path .
 
-RUN git config --global user.email "devspace-user@email.com" \
-    && git config --global user.email "devspace-user" \
+RUN git config --global user.email "shanti-user@email.com" \
+    && git config --global user.email "shanti-user" \
     && mkdir /repositories_dir /worktrees_dir && for demo_repo in backend-repo frontend-repo infra-repo; do \
           git init /repositories_dir/$demo_repo ; \
           cd /repositories_dir/$demo_repo; \
           git commit --allow-empty -m "initial commit"; \
-      done 
+      done

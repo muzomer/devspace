@@ -86,7 +86,7 @@ fn fetch_via_ureq(pr: &PrUrl, token: &str) -> eyre::Result<PrInfo> {
     let response = ureq::get(&url)
         .header("Authorization", &format!("Bearer {}", token))
         .header("Accept", "application/vnd.github+json")
-        .header("User-Agent", "devspace")
+        .header("User-Agent", "shanti")
         .call()
         .wrap_err("GitHub API request failed")?;
 

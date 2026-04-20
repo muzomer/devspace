@@ -406,30 +406,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "devspace"
-version = "0.4.1"
-dependencies = [
- "assert_cmd",
- "clap",
- "color-eyre",
- "crossterm",
- "directories",
- "expand-tilde",
- "git2",
- "lazy_static",
- "nucleo-matcher",
- "pretty_assertions",
- "ratatui",
- "rayon",
- "serde_json",
- "tempfile",
- "tracing",
- "tracing-error",
- "tracing-subscriber",
- "ureq",
-]
-
-[[package]]
 name = "diff"
 version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1434,6 +1410,30 @@ dependencies = [
  "memchr",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "shanti"
+version = "0.4.2"
+dependencies = [
+ "assert_cmd",
+ "clap",
+ "color-eyre",
+ "crossterm",
+ "directories",
+ "expand-tilde",
+ "git2",
+ "lazy_static",
+ "nucleo-matcher",
+ "pretty_assertions",
+ "ratatui",
+ "rayon",
+ "serde_json",
+ "tempfile",
+ "tracing",
+ "tracing-error",
+ "tracing-subscriber",
+ "ureq",
 ]
 
 [[package]]

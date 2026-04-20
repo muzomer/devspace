@@ -1,4 +1,5 @@
-<h1 align="center">Devspace</h1>
+<h1 align="center">Shanti</h1>
+<p><i>(Shanti: means peace of mind)</i></p>
 <p align="center">
   CLI tool to create and manage git worktrees in multiple repositories.
 </p>
@@ -20,7 +21,7 @@
   - `✘` branch merged or deleted remotely (red)
   - `⬆` never pushed to remote
   - `*` dirty working tree — uncommitted changes
-- **Create worktrees from PR links** — paste a GitHub PR URL and devspace clones the repo and creates worktree from the PR branch (requires `gh` CLI or read-only `GITHUB_TOKEN`).
+- **Create worktrees from PR links** — paste a GitHub PR URL and shanti clones the repo and creates worktree from the PR branch (requires `gh` CLI or read-only `GITHUB_TOKEN`).
 - **Vi-style navigation**
 
 # Rationale
@@ -29,7 +30,7 @@ It simplifies working in multiple git repositories, and multiple PRs in each rep
 
 The idea is to simplify context switching between open PRs by having all the git worktrees visible and manageable in single place.
 
-`devspace` scans one or more repositories directories (`DEVSPACE_REPOS_DIR`) for git repos, and stores worktrees under a separate directory (`DEVSPACE_WORKTREES_DIR`).
+`shanti` scans one or more repositories directories (`SHANTI_REPOS_DIR`) for git repos, and stores worktrees under a separate directory (`SHANTI_WORKTREES_DIR`).
 
 ```
 .
@@ -38,14 +39,14 @@ The idea is to simplify context switching between open PRs by having all the git
 │   └── frontend-repo/
 ├── personal_repos_dir/       # personal git repositories
 │   └── side-project/
-└── worktrees_dir/            # worktrees managed by devspace
+└── worktrees_dir/            # worktrees managed by shanti
 ```
 
 Assume, there is a new feature to add a button in the UI, and that button requires a new endpoint in the backend. Worktrees can be created as below:
 - In the `frontend-repo`, create new wortkree with a branch named `add-new-button-to-the-ui`.
 - and, in the `backend-repo`, create new wortkree with a branch named `add-backend-api-for-the-new-button`.
 
-When these worktrees are created in `devspace` they will be stored under the `worktrees_dir` as below:
+When these worktrees are created in `shanti` they will be stored under the `worktrees_dir` as below:
 
 ```
 └── worktrees_dir/
@@ -59,24 +60,24 @@ When these worktrees are created in `devspace` they will be stored under the `wo
             └── ...
 ```
 
-To switch between the worktrees, run `cd $(devspace)` to go the directory of the selected worktree.
+To switch between the worktrees, run `cd $(shanti)` to go the directory of the selected worktree.
 
 # Installation
 
 Download the binary from the releases or clone the repo and inside the root directory run:
 `cargo install --path . --locked`
 
-Typicall, the binary will be installed in `$HOME/.cargo/bin/devspace`.
+Typicall, the binary will be installed in `$HOME/.cargo/bin/shanti`.
 
 # Usage
 
-Run `cd $(devspace)` in `bash`/`zsh` or `cd (devspace)` in `fish` shell from any directory with the below CLI options, or define the environment variables and run it without any CLI option:
-- `--repos-dir`: one or more directories where repositories are stored, colon-separated (or set `DEVSPACE_REPOS_DIR` env variable, e.g. `/path/a:/path/b`). Can be repeated: `--repos-dir /a --repos-dir /b`
-- `--worktrees-dir`: the directory where the worktrees will be stored (or set `DEVSPACE_WORKTREES_DIR` env variable).
+Run `cd $(shanti)` in `bash`/`zsh` or `cd (shanti)` in `fish` shell from any directory with the below CLI options, or define the environment variables and run it without any CLI option:
+- `--repos-dir`: one or more directories where repositories are stored, colon-separated (or set `SHANTI_REPOS_DIR` env variable, e.g. `/path/a:/path/b`). Can be repeated: `--repos-dir /a --repos-dir /b`
+- `--worktrees-dir`: the directory where the worktrees will be stored (or set `SHANTI_WORKTREES_DIR` env variable).
 
 ## Keybindings
 
-`devspace` uses vi-style keybindings. Check them with `?`
+`shanti` uses vi-style keybindings. Check them with `?`
 
 # Roadmap
 
