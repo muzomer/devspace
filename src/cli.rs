@@ -8,7 +8,7 @@ pub struct Args {
         short = 'd',
         long = "worktrees-dir",
         value_name = "DIR",
-        env = "DEVSPACE_WORKTREES_DIR"
+        env = "SHANTI_WORKTREES_DIR"
     )]
     // TODO: list worktrees from the repositories directly instead of getting the worktrees_dir from user
     pub worktrees_dir: String,
@@ -17,7 +17,7 @@ pub struct Args {
         short = 'r',
         long = "repos-dir",
         value_name = "DIR",
-        env = "DEVSPACE_REPOS_DIR",
+        env = "SHANTI_REPOS_DIR",
         num_args = 1..,
         value_delimiter = ':'
     )]

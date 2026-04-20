@@ -1,4 +1,4 @@
-use devspace::{app, logs, run_app};
+use shanti::{app, logs, run_app};
 use std::{error::Error, io};
 
 use ratatui::{

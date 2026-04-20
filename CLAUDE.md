@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-# Devspace
+# Shanti
 
 Rust CLI tool for creating and managing git worktrees across multiple repositories. Uses a ratatui TUI, git2 for git operations, and color-eyre for error handling.
 
@@ -51,8 +51,8 @@ src/
 - **InputMode** (`keymap.rs`): `Normal` (vi-style nav) or `Insert` (text entry). `keymap::resolve(mode, key)` maps a `KeyEvent` to an `Action`.
 - **Action** (`components/mod.rs`): enum of all user intents (e.g. `MoveDown`, `Select`, `Delete`, `OpenPrWorktree`). `App::handle_key` resolves keys to actions then dispatches to the focused component handler.
 - **EventState** (`components/mod.rs`): `Consumed`, `NotConsumed`, `Exit`. Components return this from `handle_action` to indicate whether they handled the event.
-- **Worktrees** are stored under `DEVSPACE_WORKTREES_DIR/<repo-name>/<branch-name>/`.
-- **Repositories** are discovered by recursively scanning `DEVSPACE_REPOS_DIR` for `.git` directories.
+- **Worktrees** are stored under `SHANTI_WORKTREES_DIR/<repo-name>/<branch-name>/`.
+- **Repositories** are discovered by recursively scanning `SHANTI_REPOS_DIR` for `.git` directories.
 - **`has_remote_branch`** on `Worktree` indicates whether the local branch has a tracking upstream.
 - **GitHub integration** (`github.rs`): `p` opens a PR URL prompt; `P` does the same but auto-creates the worktree. Auth uses `gh` CLI first (with `GITHUB_TOKEN` if set), then falls back to `ureq` + `GITHUB_TOKEN`. If the repo isn't found locally, the user is prompted to clone it via SSH.
 
@@ -60,8 +60,8 @@ src/
 
 | Variable | CLI flag | Description |
 |---|---|---|
-| `DEVSPACE_REPOS_DIR` | `--repos-dir` | Directory containing git repositories |
-| `DEVSPACE_WORKTREES_DIR` | `--worktrees-dir` | Directory where worktrees are created |
+| `SHANTI_REPOS_DIR` | `--repos-dir` | Directory containing git repositories |
+| `SHANTI_WORKTREES_DIR` | `--worktrees-dir` | Directory where worktrees are created |
 
 ## Conventions
 
