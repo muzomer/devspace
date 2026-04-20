@@ -1,5 +1,5 @@
 <h1 align="center">Shanti</h1>
-<p><i>(Shanti: means peace of mind)</i></p>
+<p align="center"><i>(Shanti: means peace of mind)</i></p>
 <p align="center">
   CLI tool to create and manage git worktrees in multiple repositories.
 </p>
